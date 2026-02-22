@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
 
-const API = "http://localhost:5000";
+const API = "https://amarya-hotel-app-production.up.railway.app";
 
 const AMENITY_ICONS = {
   "Free WiFi":"📶","King Bed":"🛏️","Ocean View":"🌊","Balcony":"🏠","Jacuzzi":"♨️",
@@ -404,7 +404,7 @@ function SearchBar({ compact, search, onSearchChange, onDestChange, onSubmit, su
 }
 
 // ── NAV (outside App) ─────────────────────────────────────
-function Nav({ page, onNavigate, onFetchRooms, onFetchHotels, search, currency, setCurrency, language, setLanguage, t }) {
+function Nav({ page, onNavigate, onFetchRooms, onFetchHotels, search, currency, setCurrency, language, setLanguage, t, user, onLogout }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [showCurrency, setShowCurrency] = useState(false);
   const [showLanguage, setShowLanguage] = useState(false);
@@ -489,7 +489,16 @@ function Nav({ page, onNavigate, onFetchRooms, onFetchHotels, search, currency, 
 
         <div className="nav-btns">
           <button onClick={() => go("partner")} style={{ background:"transparent", border:"1px solid #c4a050", color:"#c4a050", padding:"8px 18px", fontSize:11, letterSpacing:2, fontWeight:700, cursor:"pointer", textTransform:"uppercase" }}>{t.listHotel}</button>
-          <button onClick={() => go("results")} className="btn-gold" style={{ fontSize:11, letterSpacing:2, padding:"9px 20px" }}>{t.reserve}</button>
+          {user ? (
+            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+              <div onClick={() => { go('account'); }} style={{ width:34, height:34, borderRadius:"50%", background:"linear-gradient(135deg,#c4a050,#e8d5a0)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:700, color:"#000", cursor:"pointer" }}>
+                {user.name?.[0]?.toUpperCase()||'U'}
+              </div>
+            </div>
+          ) : (
+            <button onClick={() => go("auth")} className="btn-gold" style={{ fontSize:11, letterSpacing:2, padding:"9px 20px" }}>Sign In</button>
+          )}
+          <button onClick={() => { go("map"); }} style={{ background:"rgba(255,255,255,0.06)", border:"1px solid rgba(196,160,80,0.25)", color:"rgba(255,255,255,0.8)", padding:"8px 14px", fontSize:14, cursor:"pointer" }}>🗺️</button>
         </div>
 
         {/* Mobile hamburger */}
@@ -537,6 +546,80 @@ export default function App() {
   const [submitting, setSubmitting] = useState(false);
   const [contactSent, setContactSent]   = useState(false);
   const [applicationSent, setApplicationSent] = useState(false);
+
+  // ── USER AUTH ──────────────────────────────────────────
+  const [user, setUser] = useState(() => { try { return JSON.parse(localStorage.getItem('amarya_user')); } catch { return null; } });
+  const [token, setToken] = useState(() => localStorage.getItem('amarya_token') || null);
+  const [authMode, setAuthMode] = useState('login');
+  const [authForm, setAuthForm] = useState({ name:'', email:'', phone:'', password:'' });
+  const [authError, setAuthError] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
+  const [userBookings, setUserBookings] = useState([]);
+  const authHeaders = token ? { Authorization: 'Bearer ' + token } : {};
+
+  const loginUser = (userData, userToken) => {
+    setUser(userData); setToken(userToken);
+    localStorage.setItem('amarya_user', JSON.stringify(userData));
+    localStorage.setItem('amarya_token', userToken);
+  };
+  const logoutUser = () => {
+    setUser(null); setToken(null);
+    localStorage.removeItem('amarya_user');
+    localStorage.removeItem('amarya_token');
+    navigate('home');
+  };
+  const handleAuthSubmit = async (e) => {
+    e.preventDefault(); setAuthLoading(true); setAuthError('');
+    try {
+      const endpoint = authMode === 'login' ? '/api/auth/login' : '/api/auth/register';
+      const payload = authMode === 'login'
+        ? { email: authForm.email, password: authForm.password }
+        : { name: authForm.name, email: authForm.email, phone: authForm.phone, password: authForm.password };
+      const res = await axios.post(API + endpoint, payload);
+      loginUser(res.data.user, res.data.token);
+      setAuthForm({ name:'', email:'', phone:'', password:'' });
+      navigate('account');
+    } catch (err) {
+      setAuthError(err.response?.data?.error || 'Something went wrong.');
+    } finally { setAuthLoading(false); }
+  };
+  const fetchUserBookings = async () => {
+    if (!token) return;
+    try { const res = await axios.get(API + '/api/auth/bookings', { headers: authHeaders }); setUserBookings(res.data); } catch {}
+  };
+
+  // ── REVIEWS ───────────────────────────────────────────
+  const [reviews, setReviews] = useState([]);
+  const [reviewForm, setReviewForm] = useState({ guest_name:'', rating:5, comment:'', stay_date:'' });
+  const [reviewSent, setReviewSent] = useState(false);
+  const [hotelRating, setHotelRating] = useState(null);
+  const fetchReviews = async (hotelId) => {
+    try {
+      const [rv, rt] = await Promise.all([
+        axios.get(API + '/api/hotels/' + hotelId + '/reviews'),
+        axios.get(API + '/api/hotels/' + hotelId + '/rating'),
+      ]);
+      setReviews(rv.data); setHotelRating(rt.data);
+    } catch {}
+  };
+  const handleReviewSubmit = async (hotelId) => {
+    if (!reviewForm.guest_name || !reviewForm.rating) return;
+    try {
+      await axios.post(API + '/api/hotels/' + hotelId + '/reviews', reviewForm, { headers: authHeaders });
+      setReviewSent(true);
+      setReviewForm({ guest_name:'', rating:5, comment:'', stay_date:'' });
+      fetchReviews(hotelId);
+      setTimeout(() => setReviewSent(false), 3000);
+    } catch {}
+  };
+
+  // ── MAP ───────────────────────────────────────────────
+  const [mapHotels, setMapHotels] = useState([]);
+  const [mapSelected, setMapSelected] = useState(null);
+  const [showMap, setShowMap] = useState(false);
+  const fetchMapHotels = async (q) => {
+    try { const res = await axios.get(API + '/api/map/hotels', { params: { q } }); setMapHotels(res.data); } catch {}
+  };
 
   // Currency & Language
   const [currency, setCurrency] = useState("GHS");
@@ -622,6 +705,9 @@ export default function App() {
 
   useEffect(() => { fetchRooms(); fetchHotels(); }, []);
   useEffect(() => { if (page === "admin") { fetchBookings(); fetchRooms(); fetchHotels(); } }, [page]);
+  useEffect(() => { if (page === "account") fetchUserBookings(); }, [page, token]);
+  useEffect(() => { if (page === "map") fetchMapHotels(search.destination); }, [page]);
+  useEffect(() => { if (page === "hotel" && selectedHotel) fetchReviews(selectedHotel.id); }, [page, selectedHotel]);
 
   // ── SEARCH ─────────────────────────────────────────────
   const handleSearchChange = useCallback((field, value) => {
@@ -703,7 +789,24 @@ export default function App() {
     } catch (err) { alert(err.response?.data?.error || "Submission failed."); }
   };
 
-  const navigate = (pg) => { setPage(pg); window.scrollTo(0, 0); };
+  const navigate = (pg) => {
+    setPage(pg);
+    window.scrollTo(0, 0);
+    window.history.pushState({ page: pg }, '', '/' + pg);
+  };
+
+  // Back button handler — stays forever
+  useEffect(() => {
+    const handleBack = (e) => {
+      const pg = e.state?.page || 'home';
+      setPage(pg);
+      window.scrollTo(0, 0);
+    };
+    window.addEventListener('popstate', handleBack);
+    // Set initial history state
+    window.history.replaceState({ page: 'home' }, '', '/home');
+    return () => window.removeEventListener('popstate', handleBack);
+  }, []);
   const nights = nightsBetween(booking.check_in, booking.check_out);
 
   // ── SHARED SEARCH BAR PROPS ────────────────────────────
@@ -896,6 +999,83 @@ export default function App() {
             {(selectedHotel.rooms||[]).map(room => (
               <RoomCard key={room.id} room={{ ...room, hotel_name:selectedHotel.name, city:selectedHotel.city, country:selectedHotel.country }} onBook={handleBookRoom} onView={r => { setSelectedRoom(r); navigate("detail"); }} formatPrice={formatPrice} t={t} />
             ))}
+          </div>
+
+          {/* ── REVIEWS SECTION ── */}
+          <div style={{ marginTop:64, borderTop:"1px solid rgba(196,160,80,0.15)", paddingTop:48 }}>
+            <h2 style={{ fontFamily:"'Playfair Display',Georgia,serif", fontSize:30, fontWeight:300, color:"#fff", margin:"0 0 8px" }}>Guest <em style={{ color:"#c4a050" }}>Reviews</em></h2>
+
+            {/* Rating summary */}
+            {hotelRating && hotelRating.total > 0 && (
+              <div style={{ display:"flex", alignItems:"center", gap:24, marginBottom:32, flexWrap:"wrap" }}>
+                <div style={{ textAlign:"center" }}>
+                  <div style={{ fontFamily:"'Playfair Display',Georgia,serif", fontSize:56, color:"#c4a050", lineHeight:1 }}>{hotelRating.average}</div>
+                  <div style={{ color:"#c4a050", fontSize:20, margin:"4px 0" }}>{"★".repeat(Math.round(hotelRating.average))}{"☆".repeat(5-Math.round(hotelRating.average))}</div>
+                  <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", letterSpacing:2 }}>{hotelRating.total} REVIEWS</div>
+                </div>
+                <div style={{ flex:1, minWidth:200 }}>
+                  {[[5,"five_star"],[4,"four_star"],[3,"three_star"],[2,"two_star"],[1,"one_star"]].map(([n,key]) => (
+                    <div key={n} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
+                      <span style={{ fontSize:12, color:"rgba(255,255,255,0.4)", width:8 }}>{n}</span>
+                      <span style={{ color:"#c4a050", fontSize:11 }}>★</span>
+                      <div style={{ flex:1, height:6, background:"rgba(255,255,255,0.06)", borderRadius:3 }}>
+                        <div style={{ width: hotelRating.total > 0 ? `${(hotelRating[key]/hotelRating.total)*100}%` : "0%", height:"100%", background:"#c4a050", borderRadius:3 }} />
+                      </div>
+                      <span style={{ fontSize:11, color:"rgba(255,255,255,0.3)", width:20, textAlign:"right" }}>{hotelRating[key]}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Review list */}
+            {reviews.length > 0 ? (
+              <div style={{ display:"flex", flexDirection:"column", gap:16, marginBottom:40 }}>
+                {reviews.map(r => (
+                  <div key={r.id} style={{ background:"#0d1220", border:"1px solid rgba(196,160,80,0.12)", padding:20 }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:8, flexWrap:"wrap", gap:8 }}>
+                      <div>
+                        <span style={{ fontSize:14, color:"#e8d5a0", fontWeight:600 }}>{r.guest_name}</span>
+                        {r.stay_date && <span style={{ fontSize:11, color:"rgba(255,255,255,0.3)", marginLeft:10 }}>Stayed {r.stay_date}</span>}
+                      </div>
+                      <span style={{ color:"#c4a050", fontSize:14 }}>{"★".repeat(r.rating)}{"☆".repeat(5-r.rating)}</span>
+                    </div>
+                    {r.comment && <p style={{ fontSize:14, color:"rgba(255,255,255,0.6)", lineHeight:1.7, margin:0, fontFamily:"'Cormorant Garamond',Georgia,serif" }}>{r.comment}</p>}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p style={{ color:"rgba(255,255,255,0.3)", fontSize:14, marginBottom:32, letterSpacing:1 }}>No reviews yet — be the first to review this hotel.</p>
+            )}
+
+            {/* Write a review */}
+            <div style={{ background:"#0d1220", border:"1px solid rgba(196,160,80,0.2)", padding:28 }}>
+              <h3 style={{ fontFamily:"'Playfair Display',Georgia,serif", fontSize:20, fontWeight:300, color:"#fff", margin:"0 0 20px" }}>Write a <em style={{ color:"#c4a050" }}>Review</em></h3>
+              {reviewSent && <div style={{ background:"rgba(196,160,80,0.1)", border:"1px solid rgba(196,160,80,0.4)", color:"#c4a050", padding:12, marginBottom:16, textAlign:"center", fontSize:14 }}>✓ Thank you for your review!</div>}
+              <div style={{ marginBottom:14 }}>
+                <label className="form-label">Your Name *</label>
+                <input className="amarya-input" value={reviewForm.guest_name} onChange={e=>setReviewForm(f=>({...f,guest_name:e.target.value}))} placeholder="Your name" />
+              </div>
+              <div style={{ marginBottom:14 }}>
+                <label className="form-label">Rating *</label>
+                <div style={{ display:"flex", gap:8, marginTop:6 }}>
+                  {[1,2,3,4,5].map(n => (
+                    <button key={n} type="button" onClick={()=>setReviewForm(f=>({...f,rating:n}))}
+                      style={{ width:40, height:40, background:reviewForm.rating>=n?"rgba(196,160,80,0.2)":"rgba(255,255,255,0.04)", border:`1px solid ${reviewForm.rating>=n?"#c4a050":"rgba(255,255,255,0.1)"}`, color:reviewForm.rating>=n?"#c4a050":"rgba(255,255,255,0.3)", fontSize:18, cursor:"pointer" }}>★</button>
+                  ))}
+                  <span style={{ alignSelf:"center", fontSize:13, color:"rgba(255,255,255,0.4)", marginLeft:8 }}>{["","Poor","Fair","Good","Very Good","Excellent"][reviewForm.rating]}</span>
+                </div>
+              </div>
+              <div style={{ marginBottom:14 }}>
+                <label className="form-label">When did you stay?</label>
+                <input className="amarya-input" placeholder="e.g. January 2026" value={reviewForm.stay_date} onChange={e=>setReviewForm(f=>({...f,stay_date:e.target.value}))} />
+              </div>
+              <div style={{ marginBottom:20 }}>
+                <label className="form-label">Your Review</label>
+                <textarea className="amarya-input" rows={4} style={{ resize:"vertical" }} placeholder="Share your experience at this hotel..." value={reviewForm.comment} onChange={e=>setReviewForm(f=>({...f,comment:e.target.value}))} />
+              </div>
+              <button className="btn-gold" style={{ padding:"13px 32px", fontSize:11, letterSpacing:3 }} onClick={()=>handleReviewSubmit(selectedHotel.id)}>Submit Review</button>
+            </div>
           </div>
         </div>
         <Footer onNavigate={navigate} />
@@ -1250,9 +1430,165 @@ export default function App() {
     </div>
   );
 
+
+  // ── AUTH PAGE ─────────────────────────────────────────
+  const renderAuth = () => (
+    <div style={{paddingTop:70,background:'#080c17',minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center'}}>
+      <div style={{width:'100%',maxWidth:420,padding:'0 24px'}}>
+        <div style={{textAlign:'center',marginBottom:36}}>
+          <p style={{fontSize:11,letterSpacing:6,color:'#c4a050',textTransform:'uppercase',marginBottom:8}}>{authMode==='login'?'Welcome Back':'Join Amarya'}</p>
+          <h1 style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:'clamp(28px,4vw,40px)',fontWeight:300,color:'#fff',margin:0}}>{authMode==='login'?<>Sign <em style={{color:'#c4a050'}}>In</em></>:<>Create <em style={{color:'#c4a050'}}>Account</em></>}</h1>
+        </div>
+        <div style={{background:'#0d1220',border:'1px solid rgba(196,160,80,0.2)',padding:32}}>
+          {authError && <div style={{background:'rgba(255,80,80,0.1)',border:'1px solid rgba(255,80,80,0.3)',color:'#ff6b6b',padding:12,marginBottom:16,fontSize:13,textAlign:'center'}}>{authError}</div>}
+          <form onSubmit={handleAuthSubmit}>
+            {authMode==='register' && (
+              <>
+                <div style={{marginBottom:14}}>
+                  <label className='form-label'>Full Name *</label>
+                  <input required className='amarya-input' value={authForm.name} onChange={e=>setAuthForm(f=>({...f,name:e.target.value}))} placeholder='Your full name' />
+                </div>
+                <div style={{marginBottom:14}}>
+                  <label className='form-label'>Phone (for SMS updates)</label>
+                  <input className='amarya-input' value={authForm.phone} onChange={e=>setAuthForm(f=>({...f,phone:e.target.value}))} placeholder='e.g. 0244000000' />
+                </div>
+              </>
+            )}
+            <div style={{marginBottom:14}}>
+              <label className='form-label'>Email *</label>
+              <input required type='email' className='amarya-input' value={authForm.email} onChange={e=>setAuthForm(f=>({...f,email:e.target.value}))} placeholder='your@email.com' />
+            </div>
+            <div style={{marginBottom:24}}>
+              <label className='form-label'>Password *</label>
+              <input required type='password' className='amarya-input' value={authForm.password} onChange={e=>setAuthForm(f=>({...f,password:e.target.value}))} placeholder='Min 6 characters' />
+            </div>
+            <button type='submit' className='btn-gold' style={{width:'100%',padding:16,fontSize:12,letterSpacing:4}} disabled={authLoading}>
+              {authLoading ? 'Please wait...' : authMode==='login' ? 'Sign In' : 'Create Account'}
+            </button>
+          </form>
+          <div style={{textAlign:'center',marginTop:20}}>
+            <span style={{fontSize:13,color:'rgba(255,255,255,0.4)'}}>
+              {authMode==='login' ? "Don't have an account? " : 'Already have an account? '}
+              <span onClick={()=>{setAuthMode(authMode==='login'?'register':'login');setAuthError('');}} style={{color:'#c4a050',cursor:'pointer',textDecoration:'underline'}}>
+                {authMode==='login' ? 'Register' : 'Sign In'}
+              </span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ── ACCOUNT PAGE ──────────────────────────────────────
+  const renderAccount = () => {
+    if (!user) { navigate('auth'); return null; }
+    return (
+      <div style={{paddingTop:70,background:'#080c17',minHeight:'100vh'}}>
+        <div style={{maxWidth:860,margin:'0 auto'}} className='page-pad'>
+          <div style={{display:'flex',alignItems:'center',gap:20,marginBottom:40,flexWrap:'wrap'}}>
+            <div style={{width:64,height:64,borderRadius:'50%',background:'linear-gradient(135deg,#c4a050,#e8d5a0)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:26,fontWeight:700,color:'#000'}}>
+              {user.name?.[0]?.toUpperCase()||'G'}
+            </div>
+            <div>
+              <p style={{fontSize:11,letterSpacing:4,color:'#c4a050',textTransform:'uppercase',marginBottom:4}}>Welcome back</p>
+              <h1 style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:'clamp(24px,3vw,36px)',fontWeight:300,color:'#fff',margin:0}}>{user.name}</h1>
+              <p style={{fontSize:13,color:'rgba(255,255,255,0.4)',marginTop:2}}>{user.email}</p>
+            </div>
+            <button onClick={logoutUser} style={{marginLeft:'auto',background:'transparent',border:'1px solid rgba(255,80,80,0.3)',color:'rgba(255,80,80,0.7)',padding:'8px 20px',fontSize:11,letterSpacing:2,cursor:'pointer',textTransform:'uppercase'}}>Sign Out</button>
+          </div>
+
+          <h2 style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:22,fontWeight:400,color:'#e8d5a0',marginBottom:16}}>My Bookings</h2>
+          {userBookings.length===0 ? (
+            <div style={{textAlign:'center',padding:60,color:'rgba(255,255,255,0.3)',letterSpacing:4,marginBottom:40}}>
+              <div style={{fontSize:40,marginBottom:16}}>🏨</div>
+              NO BOOKINGS YET
+              <br/>
+              <button onClick={()=>navigate('results')} className='btn-gold' style={{marginTop:20,padding:'12px 28px',fontSize:11,letterSpacing:3}}>Find Hotels</button>
+            </div>
+          ) : (
+            <div style={{display:'flex',flexDirection:'column',gap:12,marginBottom:40}}>
+              {userBookings.map(b => (
+                <div key={b.id} style={{background:'#0d1220',border:'1px solid rgba(196,160,80,0.15)',padding:20,display:'flex',gap:16,alignItems:'center',flexWrap:'wrap'}}>
+                  <div style={{width:60,height:60,borderRadius:4,overflow:'hidden',flexShrink:0}}>
+                    <img src={b.image_url||'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=200'} style={{width:'100%',height:'100%',objectFit:'cover'}} alt='' />
+                  </div>
+                  <div style={{flex:1,minWidth:160}}>
+                    <div style={{fontSize:14,color:'#e8d5a0',fontWeight:600}}>{b.hotel_name}</div>
+                    <div style={{fontSize:12,color:'rgba(255,255,255,0.4)'}}>{b.type} · {b.city}</div>
+                  </div>
+                  <div style={{fontSize:12,color:'rgba(255,255,255,0.5)'}}>{b.check_in} → {b.check_out}</div>
+                  <div style={{fontSize:16,color:'#c4a050',fontWeight:700}}>{formatPrice(b.total_price)}</div>
+                  <div style={{background:'rgba(196,160,80,0.1)',border:'1px solid rgba(196,160,80,0.2)',color:'#c4a050',padding:'4px 12px',fontSize:10,letterSpacing:2,textTransform:'uppercase'}}>{b.status}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <Footer onNavigate={navigate} />
+      </div>
+    );
+  };
+
+  // ── MAP VIEW ─────────────────────────────────────────
+  const renderMap = () => (
+    <div style={{paddingTop:70,background:'#080c17',minHeight:'100vh'}}>
+      <div style={{maxWidth:1200,margin:'0 auto'}} className='page-pad'>
+        <p style={{fontSize:11,letterSpacing:6,color:'#c4a050',textTransform:'uppercase',marginBottom:10}}>Hotel Map</p>
+        <h1 className='page-title' style={{marginBottom:8}}>Hotels on <em style={{color:'#c4a050'}}>Map</em></h1>
+        <p style={{color:'rgba(255,255,255,0.4)',fontSize:14,marginBottom:32}}>Showing {mapHotels.length} hotels — click any pin to see details</p>
+
+        {/* Simple visual map with hotel pins */}
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))',gap:20,marginBottom:40}}>
+          {mapHotels.map(h => (
+            <div key={h.id} onClick={()=>setMapSelected(mapSelected?.id===h.id?null:h)}
+              style={{background: mapSelected?.id===h.id?'rgba(196,160,80,0.12)':'#0d1220', border:'1px solid rgba(196,160,80,0.15)', padding:16, cursor:'pointer', transition:'all 0.2s'}}>
+              <div style={{display:'flex',gap:12,alignItems:'flex-start'}}>
+                <div style={{width:56,height:56,borderRadius:4,overflow:'hidden',flexShrink:0}}>
+                  <img src={h.image_url} style={{width:'100%',height:'100%',objectFit:'cover'}} alt='' />
+                </div>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:13,color:'#e8d5a0',fontWeight:600,marginBottom:2}}>{h.name}</div>
+                  <div style={{fontSize:11,color:'rgba(255,255,255,0.4)',marginBottom:4}}>📍 {h.city}, {h.country}</div>
+                  <div style={{display:'flex',alignItems:'center',gap:8}}>
+                    <span style={{color:'#c4a050',fontSize:12}}>{'★'.repeat(Math.round(h.avg_rating||0))}{'☆'.repeat(5-Math.round(h.avg_rating||0))}</span>
+                    <span style={{fontSize:11,color:'rgba(255,255,255,0.3)'}}>({h.review_count} reviews)</span>
+                  </div>
+                </div>
+                <div style={{textAlign:'right',flexShrink:0}}>
+                  <div style={{fontSize:11,color:'rgba(255,255,255,0.3)'}}>from</div>
+                  <div style={{color:'#c4a050',fontSize:15,fontWeight:700}}>{h.min_price?formatPrice(h.min_price):'—'}</div>
+                </div>
+              </div>
+              {mapSelected?.id===h.id && (
+                <div style={{marginTop:12,paddingTop:12,borderTop:'1px solid rgba(196,160,80,0.2)',display:'flex',gap:8}}>
+                  <button onClick={e=>{e.stopPropagation();fetchRooms(h.city);navigate('results');}} className='btn-gold' style={{flex:1,padding:'8px 12px',fontSize:10,letterSpacing:2}}>View Rooms</button>
+                  {h.latitude && h.longitude && (
+                    <a href={'https://www.google.com/maps?q='+h.latitude+','+h.longitude} target='_blank' rel='noreferrer'
+                      onClick={e=>e.stopPropagation()}
+                      style={{flex:1,padding:'8px 12px',fontSize:10,letterSpacing:2,border:'1px solid rgba(196,160,80,0.5)',color:'#c4a050',textDecoration:'none',display:'flex',alignItems:'center',justifyContent:'center',textTransform:'uppercase'}}>
+                      Google Maps ↗
+                    </a>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {mapHotels.length===0 && (
+          <div style={{textAlign:'center',padding:80,color:'rgba(255,255,255,0.3)',letterSpacing:4}}>
+            <div style={{fontSize:48,marginBottom:16}}>🗺️</div>
+            SEARCH A CITY TO SEE HOTELS ON MAP
+          </div>
+        )}
+      </div>
+      <Footer onNavigate={navigate} />
+    </div>
+  );
+
   return (
     <div style={{ background:"#080c17", color:"#fff", fontFamily:"'Cormorant Garamond',Georgia,serif" }}>
-      <Nav page={page} onNavigate={navigate} onFetchRooms={fetchRooms} onFetchHotels={fetchHotels} search={search} currency={currency} setCurrency={setCurrency} language={language} setLanguage={setLanguage} t={t} />
+      <Nav page={page} onNavigate={navigate} onFetchRooms={fetchRooms} onFetchHotels={fetchHotels} search={search} currency={currency} setCurrency={setCurrency} language={language} setLanguage={setLanguage} t={t} user={user} onLogout={logoutUser} />
       {page==="home"         && renderHome()}
       {page==="results"      && renderResults()}
       {page==="hotels"       && renderHotels()}
@@ -1265,6 +1601,9 @@ export default function App() {
       {page==="contact"      && renderContact()}
       {page==="partner"      && renderPartner()}
       {page==="admin"        && renderAdmin()}
+      {page==="auth"         && renderAuth()}
+      {page==="account"      && renderAccount()}
+      {page==="map"          && renderMap()}
     </div>
   );
 }
