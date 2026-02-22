@@ -582,8 +582,10 @@ app.post('/api/bookings', optionalAuth, async (req, res) => {
         const bookingRecord = { id:result.insertId, customer_name, customer_email, customer_phone, check_in, check_out, nights, guests:guests||1, special_requests, hotel_payout, commission_amount };
 
         // Email hotel
-        await notifyHotel({ email:room.hotel_email, commission:room.commission }, bookingRecord, room);
-        db.query("UPDATE bookings SET hotel_notified=1 WHERE id=?", [result.insertId]);
+        // Send email in background - dont block the response
+        notifyHotel({ email:room.hotel_email, commission:room.commission, hotel_name:room.hotel_name }, bookingRecord, room)
+          .then(() => db.query("UPDATE bookings SET hotel_notified=1 WHERE id=?", [result.insertId]))
+          .catch(e => console.error('Email error:', e.message));
 
         // SMS to guest
         if (customer_phone) {
