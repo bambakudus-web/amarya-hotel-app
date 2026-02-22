@@ -16,25 +16,16 @@ const JWT_SECRET = process.env.JWT_SECRET || 'amarya_secret_2026';
 //  DATABASE
 // ─────────────────────────────────────────────────────────
 const db = mysql.createConnection({
-  socketPath: '/var/run/mysqld/mysqld.sock',
-  user: 'root', password: '', database: 'amarya_db'
+  host:     process.env.MYSQLHOST     || process.env.DB_HOST     || '127.0.0.1',
+  port:     process.env.MYSQLPORT     || process.env.DB_PORT     || 3306,
+  user:     process.env.MYSQLUSER     || process.env.DB_USER     || 'root',
+  password: process.env.MYSQLPASSWORD || process.env.DB_PASSWORD || '',
+  database: process.env.MYSQLDATABASE || process.env.DB_NAME     || 'amarya_db',
 });
 
 db.connect((err) => {
-  if (err) {
-    console.warn('Socket failed, trying TCP...');
-    const db2 = mysql.createConnection({
-      host: '127.0.0.1', port: 3306,
-      user: 'root', password: '', database: 'amarya_db'
-    });
-    db2.connect((err2) => {
-      if (err2) { console.error('❌ DB failed:', err2.message); return; }
-      console.log('✅ Connected via TCP - amarya_db');
-    });
-    Object.assign(db, db2);
-    return;
-  }
-  console.log('✅ Connected via socket - amarya_db');
+  if (err) { console.error('❌ DB failed:', err.message); return; }
+  console.log('✅ Connected to MySQL database');
 });
 
 // ─────────────────────────────────────────────────────────
