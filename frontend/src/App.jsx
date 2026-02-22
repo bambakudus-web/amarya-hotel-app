@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
 
-const API = "https://amarya-hotel-app-production.up.railway.app";
+const API = "http://localhost:5000";
 
 const AMENITY_ICONS = {
   "Free WiFi":"📶","King Bed":"🛏️","Ocean View":"🌊","Balcony":"🏠","Jacuzzi":"♨️",
@@ -758,14 +758,18 @@ export default function App() {
 
   const handleSubmitBooking = async (e) => {
     e.preventDefault(); setSubmitting(true);
+    const nights = nightsBetween(booking.check_in, booking.check_out);
+    const total = selectedRoom.price * nights;
+    // Show confirmation instantly — dont make user wait
+    setConfirmation({ booking_id:'pending', hotel_name:selectedRoom.hotel_name, total_price:total, nights, room:selectedRoom, booking:{...booking} });
+    navigate("confirmation");
+    setSubmitting(false);
+    // Save to server in background
     try {
-      const res = await axios.post(`${API}/api/bookings`, { ...booking, room_id: selectedRoom.id });
-      setConfirmation({ ...res.data, room: selectedRoom, booking: { ...booking } });
-      navigate("confirmation");
+      const res = await axios.post(API+"/api/bookings", { ...booking, room_id: selectedRoom.id });
+      setConfirmation(prev => ({ ...prev, ...res.data, room:selectedRoom, booking:{...booking} }));
       fetchRooms(search.destination);
-    } catch (err) {
-      alert(err.response?.data?.error || "Booking failed. Please try again.");
-    } finally { setSubmitting(false); }
+    } catch (err) { console.error("Booking save error:", err.message); }
   };
 
   const handleCancelBooking = async (id) => {
@@ -1237,6 +1241,27 @@ export default function App() {
               </div>
             ))}
           </div>
+          {/* Mobile Money Payment Instructions */}
+          <div style={{background:"linear-gradient(135deg,rgba(196,160,80,0.08),rgba(196,160,80,0.04))",border:"1px solid rgba(196,160,80,0.3)",padding:24,marginBottom:24,textAlign:"left"}}>
+            <div style={{fontSize:10,letterSpacing:3,color:"#c4a050",textTransform:"uppercase",marginBottom:14}}>💛 Complete Payment via Mobile Money</div>
+            <p style={{fontSize:14,color:"rgba(255,255,255,0.6)",lineHeight:1.8,marginBottom:16,fontFamily:"'Cormorant Garamond',Georgia,serif"}}>To confirm your reservation, please send payment to:</p>
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              {[["📱 MTN MoMo","0500714021","Kelly Syder"],["📱 Telecel Cash","0500714021","Kelly Syder"]].map(([network,number,name]) => (
+                <div key={network} style={{background:"rgba(0,0,0,0.3)",border:"1px solid rgba(196,160,80,0.15)",padding:"12px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
+                  <span style={{fontSize:13,color:"#e8d5a0",fontWeight:600}}>{network}</span>
+                  <span style={{fontSize:16,color:"#c4a050",fontWeight:700,letterSpacing:2}}>{number}</span>
+                  <span style={{fontSize:12,color:"rgba(255,255,255,0.4)"}}>{name}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{marginTop:14,padding:"10px 14px",background:"rgba(196,160,80,0.06)",borderLeft:"3px solid #c4a050"}}>
+              <p style={{fontSize:13,color:"rgba(255,255,255,0.5)",margin:0,lineHeight:1.7}}>
+                Use <strong style={{color:"#e8d5a0"}}>Booking #{confirmation.booking_id}</strong> as your payment reference.<br/>
+                Send <strong style={{color:"#c4a050"}}>GHS {Number(confirmation.total_price).toLocaleString()}</strong> and email proof to <strong style={{color:"#e8d5a0"}}>kellysyder753@gmail.com</strong>
+              </p>
+            </div>
+          </div>
+
           <div style={{display:"flex",gap:12,justifyContent:"center",flexWrap:"wrap"}}>
             <button onClick={()=>{navigate("home");setConfirmation(null);}} className="btn-ghost">Home</button>
             <button onClick={()=>{navigate("results");fetchRooms(search.destination);setConfirmation(null);}} className="btn-gold">Book Another</button>
