@@ -1,31 +1,95 @@
 process.on('uncaughtException', (err) => { console.error('CRASH:', err.message, err.stack); process.exit(1); });
 process.on('unhandledRejection', (reason) => { console.error('UNHANDLED:', reason); });
+
 const REQUIRED = ['express','cors','axios','bcryptjs','jsonwebtoken','mysql2'];
-for (const mod of REQUIRED) { try { require.resolve(mod); } catch(e) { console.error('MISSING MODULE:', mod); process.exit(1); } }
+for (const mod of REQUIRED) { 
+  try { require.resolve(mod); } 
+  catch(e) { console.error('MISSING MODULE:', mod); process.exit(1); } 
+}
 console.log('All modules OK');
+
 const express = require('express');
 const cors    = require('cors');
 const axios   = require('axios');
 const bcrypt  = require('bcryptjs');
 const jwt     = require('jsonwebtoken');
 const mysql   = require('mysql2/promise');
+
 const app = express();
-app.use(cors());
+
+// Middleware
+app.use(cors({
+  origin: '*', // Allow all origins for development
+  credentials: true
+}));
 app.use(express.json());
+
 const JWT_SECRET = process.env.JWT_SECRET || 'amarya_secret_2026';
+
+// Database connection
 const db = mysql.createPool({
   host: process.env.MYSQLHOST || process.env.DB_HOST || '127.0.0.1',
   port: process.env.MYSQLPORT || process.env.DB_PORT || 3306,
   user: process.env.MYSQLUSER || process.env.DB_USER || 'root',
   password: process.env.MYSQLPASSWORD || process.env.DB_PASSWORD || '',
   database: process.env.MYSQLDATABASE || process.env.DB_NAME || 'amarya_db',
-  waitForConnections: true, connectionLimit: 10,
+  waitForConnections: true, 
+  connectionLimit: 10,
 });
-(async () => { try { await db.query('SELECT 1'); console.log('DB connected OK'); } catch(err) { console.error('DB failed:', err.message); } })();
+
+(async () => { 
+  try { 
+    await db.query('SELECT 1'); 
+    console.log('DB connected OK'); 
+  } catch(err) { 
+    console.error('DB failed:', err.message); 
+  } 
+})();
+
+// Email configuration
 const BREVO_API_KEY = process.env.BREVO_API_KEY || '';
 const SENDER_EMAIL  = process.env.SENDER_EMAIL  || process.env.EMAIL_USER || '';
 const emailEnabled  = !!(BREVO_API_KEY && SENDER_EMAIL);
 console.log('Email:', emailEnabled ? 'ENABLED via Brevo HTTP API' : 'DISABLED');
+
+// ============= ADDED ROOT ROUTE HERE =============
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'Amarya API is running', 
+    status: 'online',
+    timestamp: new Date().toISOString(),
+    endpoints: {
+      status: '/api/status',
+      hotels: '/api/hotels',
+      rooms: '/api/rooms',
+      bookings: '/api/bookings',
+      auth: '/api/auth'
+    }
+  });
+});
+
+// ============= IMPROVED STATUS ENDPOINT =============
+app.get('/api/status', (req, res) => {
+  res.json({ 
+    server: 'online', 
+    email: emailEnabled ? 'enabled (Brevo HTTP API)' : 'DISABLED',
+    sms: process.env.ARKESEL_API_KEY ? 'enabled' : 'simulated',
+    amadeus: amadeusEnabled ? 'enabled' : 'disabled',
+    database: 'connected',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// ============= TEST ENDPOINT =============
+app.get('/api/test', (req, res) => {
+  res.json({ 
+    success: true, 
+    message: 'API is working',
+    time: new Date().toISOString()
+  });
+});
+
+// Email sending function
 async function sendEmail(to, subject, html) {
   if (!emailEnabled) { console.log('[EMAIL SIM] To:', to, '|', subject); return; }
   try {
@@ -34,8 +98,11 @@ async function sendEmail(to, subject, html) {
       { headers: { 'api-key': BREVO_API_KEY, 'Content-Type':'application/json' } }
     );
     console.log('Email sent to', to);
-  } catch(e) { console.error('Email FAILED to', to+':', JSON.stringify(e.response?.data) || e.message); }
+  } catch(e) { 
+    console.error('Email FAILED to', to+':', JSON.stringify(e.response?.data) || e.message); 
+  }
 }
+
 async function notifyHotel(hotel, booking, room) {
   const rows = [['Booking ID','#'+booking.id],['Guest',booking.customer_name],['Email',booking.customer_email],['Phone',booking.customer_phone||'N/A'],['Room',room.type+' — Room '+room.room_number],['Check In',booking.check_in],['Check Out',booking.check_out],['Nights',booking.nights],['Guests',booking.guests],['Requests',booking.special_requests||'None']]
     .map(([l,v],i)=>`<tr style="background:${i%2?'#fff':'#f9f9f9'}"><td style="padding:10px;color:#666;border:1px solid #eee">${l}</td><td style="padding:10px;font-weight:bold;border:1px solid #eee">${v}</td></tr>`).join('');
@@ -43,70 +110,550 @@ async function notifyHotel(hotel, booking, room) {
   if (hotel.email) await sendEmail(hotel.email, `New Booking #${booking.id} — ${room.type}`, html);
   if (SENDER_EMAIL) await sendEmail(SENDER_EMAIL, `[ADMIN] Booking #${booking.id} — ${room.hotel_name||room.type}`, html);
 }
+
 async function sendSMS(phone, message) {
   const apiKey = process.env.ARKESEL_API_KEY;
   if (!apiKey) { console.log('[SMS SIM] To:', phone); return; }
   let num = phone.replace(/\D/g,'');
   if (num.startsWith('0')) num = '233'+num.slice(1);
   if (!num.startsWith('233')) num = '233'+num;
-  try { await axios.get('https://sms.arkesel.com/sms/api', { params:{action:'send-sms',api_key:apiKey,to:num,from:'AMARYA',sms:message} }); console.log('SMS sent to', num); }
+  try { 
+    await axios.get('https://sms.arkesel.com/sms/api', { 
+      params:{action:'send-sms',api_key:apiKey,to:num,from:'AMARYA',sms:message} 
+    }); 
+    console.log('SMS sent to', num);
+  }
   catch(e) { console.error('SMS failed:', e.response?.data||e.message); }
 }
+
+// Amadeus API configuration
 const AMADEUS_BASE = 'https://test.api.amadeus.com';
 let amadeusToken = null, amadeusTokenExpiry = 0;
+let amadeusEnabled = !!(process.env.AMADEUS_CLIENT_ID && process.env.AMADEUS_CLIENT_SECRET);
+
 async function getAmadeusToken() {
   if (amadeusToken && Date.now() < amadeusTokenExpiry) return amadeusToken;
   const id = process.env.AMADEUS_CLIENT_ID, secret = process.env.AMADEUS_CLIENT_SECRET;
   if (!id || !secret) return null;
   try {
-    const res = await axios.post(`${AMADEUS_BASE}/v1/security/oauth2/token`, new URLSearchParams({grant_type:'client_credentials',client_id:id,client_secret:secret}), {headers:{'Content-Type':'application/x-www-form-urlencoded'}});
-    amadeusToken = res.data.access_token; amadeusTokenExpiry = Date.now()+(res.data.expires_in-60)*1000; return amadeusToken;
-  } catch(e) { console.error('Amadeus auth failed:', e.response?.data||e.message); return null; }
+    const res = await axios.post(`${AMADEUS_BASE}/v1/security/oauth2/token`, 
+      new URLSearchParams({grant_type:'client_credentials',client_id:id,client_secret:secret}), 
+      {headers:{'Content-Type':'application/x-www-form-urlencoded'}});
+    amadeusToken = res.data.access_token; 
+    amadeusTokenExpiry = Date.now()+(res.data.expires_in-60)*1000; 
+    return amadeusToken;
+  } catch(e) { 
+    console.error('Amadeus auth failed:', e.response?.data||e.message); 
+    return null;
+  }
 }
-const CITY_TO_IATA = {'accra':'ACC','kumasi':'KMS','takoradi':'TKD','tamale':'TML','lagos':'LOS','abuja':'ABV','kano':'KAN','port harcourt':'PHC','nairobi':'NBO','mombasa':'MBA','cape town':'CPT','johannesburg':'JNB','durban':'DUR','cairo':'CAI','addis ababa':'ADD','dar es salaam':'DAR','zanzibar':'ZNZ','kigali':'KGL','abidjan':'ABJ','dakar':'DKR','casablanca':'CMN','marrakech':'RAK','dubai':'DXB','abu dhabi':'AUH','london':'LON','paris':'PAR','amsterdam':'AMS','rome':'ROM','barcelona':'BCN','madrid':'MAD','berlin':'BER','lisbon':'LIS','new york':'NYC','los angeles':'LAX','miami':'MIA','chicago':'CHI','singapore':'SIN','bangkok':'BKK','tokyo':'TYO','hong kong':'HKG','istanbul':'IST','mumbai':'BOM','delhi':'DEL','sydney':'SYD','melbourne':'MEL'};
-function cityToIata(q) { if(!q) return null; const lower=q.toLowerCase().trim(); for(const [city,code] of Object.entries(CITY_TO_IATA)) { if(lower.includes(city)||city.includes(lower)) return code; } return null; }
-const HOTEL_IMAGES = ['1578683010236-d716f9a3f461','1571003123894-1f0594d2b5d9','1582719478250-c89cae4dc85b','1566195992011-5f6b21e539aa','1613490493576-7fde63acd811','1560185007-cde436f6a4d0','1542314831-068cd1dbfeeb','1540518614846-7eded433c457'];
+
+const CITY_TO_IATA = {
+  'accra':'ACC','kumasi':'KMS','takoradi':'TKD','tamale':'TML',
+  'lagos':'LOS','abuja':'ABV','kano':'KAN','port harcourt':'PHC',
+  'nairobi':'NBO','mombasa':'MBA','cape town':'CPT','johannesburg':'JNB',
+  'durban':'DUR','cairo':'CAI','addis ababa':'ADD','dar es salaam':'DAR',
+  'zanzibar':'ZNZ','kigali':'KGL','abidjan':'ABJ','dakar':'DKR',
+  'casablanca':'CMN','marrakech':'RAK','dubai':'DXB','abu dhabi':'AUH',
+  'london':'LON','paris':'PAR','amsterdam':'AMS','rome':'ROM',
+  'barcelona':'BCN','madrid':'MAD','berlin':'BER','lisbon':'LIS',
+  'new york':'NYC','los angeles':'LAX','miami':'MIA','chicago':'CHI',
+  'singapore':'SIN','bangkok':'BKK','tokyo':'TYO','hong kong':'HKG',
+  'istanbul':'IST','mumbai':'BOM','delhi':'DEL','sydney':'SYD','melbourne':'MEL'
+};
+
+function cityToIata(q) { 
+  if(!q) return null; 
+  const lower=q.toLowerCase().trim(); 
+  for(const [city,code] of Object.entries(CITY_TO_IATA)) { 
+    if(lower.includes(city)||city.includes(lower)) return code; 
+  } 
+  return null; 
+}
+
+const HOTEL_IMAGES = [
+  '1578683010236-d716f9a3f461','1571003123894-1f0594d2b5d9',
+  '1582719478250-c89cae4dc85b','1566195992011-5f6b21e539aa',
+  '1613490493576-7fde63acd811','1560185007-cde436f6a4d0',
+  '1542314831-068cd1dbfeeb','1540518614846-7eded433c457'
+];
+
 async function fetchAmadeusHotels(cityCode, checkIn, checkOut, adults=1) {
-  const token = await getAmadeusToken(); if(!token) return null;
+  const token = await getAmadeusToken(); 
+  if(!token) return null;
   try {
-    const listRes = await axios.get(`${AMADEUS_BASE}/v1/reference-data/locations/hotels/by-city`, {headers:{Authorization:`Bearer ${token}`},params:{cityCode,radius:20,radiusUnit:'KM',ratings:'3,4,5',hotelSource:'ALL'}});
-    const hotels = listRes.data.data; if(!hotels||!hotels.length) return [];
+    const listRes = await axios.get(`${AMADEUS_BASE}/v1/reference-data/locations/hotels/by-city`, 
+      {headers:{Authorization:`Bearer ${token}`},
+       params:{cityCode,radius:20,radiusUnit:'KM',ratings:'3,4,5',hotelSource:'ALL'}});
+    const hotels = listRes.data.data; 
+    if(!hotels||!hotels.length) return [];
     const hotelIds = hotels.slice(0,20).map(h=>h.hotelId);
     const today = new Date();
     const ci = checkIn||new Date(today.getTime()+86400000).toISOString().split('T')[0];
     const co = checkOut||new Date(today.getTime()+2*86400000).toISOString().split('T')[0];
-    const offersRes = await axios.get(`${AMADEUS_BASE}/v3/shopping/hotel-offers`, {headers:{Authorization:`Bearer ${token}`},params:{hotelIds:hotelIds.join(','),checkInDate:ci,checkOutDate:co,adults,roomQuantity:1,currency:'USD',bestRateOnly:true}});
+    const offersRes = await axios.get(`${AMADEUS_BASE}/v3/shopping/hotel-offers`, 
+      {headers:{Authorization:`Bearer ${token}`},
+       params:{hotelIds:hotelIds.join(','),checkInDate:ci,checkOutDate:co,adults,roomQuantity:1,currency:'USD',bestRateOnly:true}});
     const offers = offersRes.data.data||[];
-    const amenityMap = {'SWIMMING_POOL':'Private Pool','WIFI':'Free WiFi','PARKING':'Parking','RESTAURANT':'Restaurant','FITNESS_CENTER':'Gym','SPA':'Couples Spa','AIR_CONDITIONING':'AC','BAR':'Minibar','ROOM_SERVICE':'Room Service'};
+    const amenityMap = {
+      'SWIMMING_POOL':'Private Pool','WIFI':'Free WiFi','PARKING':'Parking',
+      'RESTAURANT':'Restaurant','FITNESS_CENTER':'Gym','SPA':'Couples Spa',
+      'AIR_CONDITIONING':'AC','BAR':'Minibar','ROOM_SERVICE':'Room Service'
+    };
     return offers.map(item => {
       const hotel=item.hotel, offer=item.offers?.[0], priceUSD=parseFloat(offer?.price?.total||0), priceGHS=Math.round(priceUSD*15);
       const amenities=(hotel.amenities||[]).slice(0,5).map(a=>amenityMap[a]||a).join(',');
-      return {id:`amadeus_${hotel.hotelId}`,source:'amadeus',hotel_name:hotel.name,room_number:offer?.id||'A1',type:offer?.room?.typeEstimated?.category||'Standard Room',description:`${hotel.name} — ${offer?.room?.description?.text||'Comfortable room.'}`,price:priceGHS,price_usd:priceUSD,currency:'GHS',status:'available',capacity:parseInt(offer?.guests?.adults)||2,amenities:amenities||'Free WiFi,Smart TV',image_url:`https://images.unsplash.com/photo-${HOTEL_IMAGES[Math.abs(hotel.hotelId.charCodeAt(0))%HOTEL_IMAGES.length]}?w=600`,city:hotel.address?.cityName||'',country:hotel.address?.countryCode||'',latitude:hotel.geoCode?.latitude,longitude:hotel.geoCode?.longitude,star_rating:hotel.rating?parseInt(hotel.rating):4,check_in:ci,check_out:co,offer_id:offer?.id};
+      return {
+        id:`amadeus_${hotel.hotelId}`,source:'amadeus',
+        hotel_name:hotel.name,room_number:offer?.id||'A1',
+        type:offer?.room?.typeEstimated?.category||'Standard Room',
+        description:`${hotel.name} — ${offer?.room?.description?.text||'Comfortable room.'}`,
+        price:priceGHS,price_usd:priceUSD,currency:'GHS',status:'available',
+        capacity:parseInt(offer?.guests?.adults)||2,
+        amenities:amenities||'Free WiFi,Smart TV',
+        image_url:`https://images.unsplash.com/photo-${HOTEL_IMAGES[Math.abs(hotel.hotelId.charCodeAt(0))%HOTEL_IMAGES.length]}?w=600`,
+        city:hotel.address?.cityName||'',country:hotel.address?.countryCode||'',
+        latitude:hotel.geoCode?.latitude,longitude:hotel.geoCode?.longitude,
+        star_rating:hotel.rating?parseInt(hotel.rating):4,
+        check_in:ci,check_out:co,offer_id:offer?.id
+      };
     });
-  } catch(e) { console.error('Amadeus fetch failed:', e.response?.data||e.message); return null; }
+  } catch(e) { 
+    console.error('Amadeus fetch failed:', e.response?.data||e.message); 
+    return null; 
+  }
 }
-const amadeusEnabled = !!(process.env.AMADEUS_CLIENT_ID && process.env.AMADEUS_CLIENT_SECRET);
-function authMiddleware(req,res,next){const token=req.headers.authorization?.split(' ')[1];if(!token)return res.status(401).json({error:'No token'});try{req.user=jwt.verify(token,JWT_SECRET);next();}catch{return res.status(401).json({error:'Invalid token'});}}
-function optionalAuth(req,res,next){const token=req.headers.authorization?.split(' ')[1];if(token){try{req.user=jwt.verify(token,JWT_SECRET);}catch{}}next();}
-app.post('/api/auth/register', async(req,res)=>{const{name,email,phone,password}=req.body;if(!name||!email||!password)return res.status(400).json({error:'Name, email and password required.'});if(password.length<6)return res.status(400).json({error:'Password min 6 characters.'});try{const[existing]=await db.query('SELECT id FROM users WHERE email=?',[email]);if(existing.length)return res.status(400).json({error:'Email already registered.'});const hash=await bcrypt.hash(password,10);const[result]=await db.query('INSERT INTO users (name,email,phone,password_hash) VALUES (?,?,?,?)',[name,email,phone||null,hash]);const token=jwt.sign({id:result.insertId,name,email},JWT_SECRET,{expiresIn:'30d'});if(phone)sendSMS(phone,`Welcome to Amarya, ${name}! - Amarya`);res.json({success:true,token,user:{id:result.insertId,name,email,phone}});}catch(err){res.status(500).json({error:err.message});}});
-app.post('/api/auth/login', async(req,res)=>{const{email,password}=req.body;if(!email||!password)return res.status(400).json({error:'Email and password required.'});try{const[rows]=await db.query('SELECT * FROM users WHERE email=?',[email]);if(!rows.length)return res.status(401).json({error:'Invalid email or password.'});const user=rows[0];if(!await bcrypt.compare(password,user.password_hash))return res.status(401).json({error:'Invalid email or password.'});const token=jwt.sign({id:user.id,name:user.name,email:user.email},JWT_SECRET,{expiresIn:'30d'});res.json({success:true,token,user:{id:user.id,name:user.name,email:user.email,phone:user.phone}});}catch(err){res.status(500).json({error:err.message});}});
-app.get('/api/auth/me', authMiddleware, async(req,res)=>{try{const[rows]=await db.query('SELECT id,name,email,phone,created_at FROM users WHERE id=?',[req.user.id]);if(!rows.length)return res.status(404).json({error:'Not found'});res.json(rows[0]);}catch(err){res.status(500).json({error:err.message});}});
-app.put('/api/auth/me', authMiddleware, async(req,res)=>{const{name,phone,password}=req.body;try{if(password&&password.length>=6){const hash=await bcrypt.hash(password,10);await db.query('UPDATE users SET name=?,phone=?,password_hash=? WHERE id=?',[name,phone||null,hash,req.user.id]);}else{await db.query('UPDATE users SET name=?,phone=? WHERE id=?',[name,phone||null,req.user.id]);}res.json({success:true});}catch(err){res.status(500).json({error:err.message});}});
-app.get('/api/auth/bookings', authMiddleware, async(req,res)=>{try{const[data]=await db.query(`SELECT b.*,COALESCE(r.type,'External Room') AS type,COALESCE(r.room_number,'EXT') AS room_number,COALESCE(r.image_url,'') AS image_url,COALESCE(h.name,b.external_ref) AS hotel_name,COALESCE(h.city,'') AS city,COALESCE(h.country,'') AS country FROM bookings b LEFT JOIN rooms r ON b.room_id=r.id LEFT JOIN hotels h ON b.hotel_id=h.id WHERE b.user_id=? ORDER BY b.created_at DESC`,[req.user.id]);res.json(data);}catch(err){res.status(500).json({error:err.message});}});
-app.get('/api/hotels', async(req,res)=>{const{q}=req.query;try{let sql=`SELECT h.*,COALESCE(AVG(rv.rating),0) AS avg_rating,COUNT(rv.id) AS review_count FROM hotels h LEFT JOIN reviews rv ON rv.hotel_id=h.id WHERE h.status='active'`;const params=[];if(q){sql+=' AND (h.city LIKE ? OR h.country LIKE ? OR h.name LIKE ?)';const t=`%${q}%`;params.push(t,t,t);}sql+=' GROUP BY h.id ORDER BY avg_rating DESC, h.star_rating DESC';const[data]=await db.query(sql,params);res.json(data);}catch(err){res.status(500).json({error:err.message});}});
-app.get('/api/hotels/:id', async(req,res)=>{try{const[hotels]=await db.query('SELECT * FROM hotels WHERE id=?',[req.params.id]);if(!hotels.length)return res.status(404).json({error:'Hotel not found'});const[rooms]=await db.query('SELECT * FROM rooms WHERE hotel_id=? ORDER BY price ASC',[hotels[0].id]);const[reviews]=await db.query('SELECT * FROM reviews WHERE hotel_id=? ORDER BY created_at DESC LIMIT 20',[hotels[0].id]);res.json({...hotels[0],rooms,reviews});}catch(err){res.status(500).json({error:err.message});}});
-app.post('/api/hotels/apply', async(req,res)=>{const{hotel_name,city,country,contact_name,email,phone,message}=req.body;if(!hotel_name||!city||!country||!contact_name||!email)return res.status(400).json({error:'Missing fields.'});try{const[result]=await db.query('INSERT INTO hotel_applications (hotel_name,city,country,contact_name,email,phone,message) VALUES (?,?,?,?,?,?,?)',[hotel_name,city,country,contact_name,email,phone||null,message||null]);if(SENDER_EMAIL)sendEmail(SENDER_EMAIL,`New Partner: ${hotel_name}`,`<p><b>Hotel:</b> ${hotel_name}</p><p><b>Location:</b> ${city}, ${country}</p><p><b>Contact:</b> ${contact_name}</p><p><b>Email:</b> ${email}</p><p><b>Message:</b> ${message||'N/A'}</p>`);res.json({success:true,application_id:result.insertId});}catch(err){res.status(500).json({error:err.message});}});
-app.post('/api/contact', async(req,res)=>{const{name,email,subject,message}=req.body;if(!name||!email||!message)return res.status(400).json({error:'Name, email and message required.'});console.log('Contact from',name,'<'+email+'>');sendEmail(SENDER_EMAIL||email,`Contact: ${subject||'New Message'} from ${name}`,`<div style="font-family:Arial,sans-serif;padding:20px"><h2>New Contact Message</h2><p><b>Name:</b> ${name}</p><p><b>Email:</b> ${email}</p><p><b>Subject:</b> ${subject||'N/A'}</p><p><b>Message:</b> ${message}</p><p>Reply to: <a href="mailto:${email}">${email}</a></p></div>`);sendEmail(email,'Message received — Amarya',`<div style="font-family:Arial,sans-serif;padding:20px"><h2>Hi ${name},</h2><p>We received your message and will reply within 24 hours.</p><p style="color:#888;font-style:italic">"${message}"</p><p>Best,<br><b>The Amarya Team</b></p></div>`);res.json({success:true});});
-app.get('/api/hotels/:id/reviews', async(req,res)=>{try{const[data]=await db.query('SELECT * FROM reviews WHERE hotel_id=? ORDER BY created_at DESC',[req.params.id]);res.json(data);}catch(err){res.status(500).json({error:err.message});}});
-app.post('/api/hotels/:id/reviews', optionalAuth, async(req,res)=>{const{guest_name,rating,comment,stay_date}=req.body;if(!guest_name||!rating)return res.status(400).json({error:'Name and rating required.'});if(rating<1||rating>5)return res.status(400).json({error:'Rating 1-5.'});try{const[result]=await db.query('INSERT INTO reviews (hotel_id,user_id,guest_name,rating,comment,stay_date) VALUES (?,?,?,?,?,?)',[req.params.id,req.user?.id||null,guest_name,rating,comment||null,stay_date||null]);res.json({success:true,review_id:result.insertId});}catch(err){res.status(500).json({error:err.message});}});
-app.get('/api/hotels/:id/rating', async(req,res)=>{try{const[data]=await db.query(`SELECT COUNT(*) AS total,ROUND(AVG(rating),1) AS average,SUM(rating=5) AS five_star,SUM(rating=4) AS four_star,SUM(rating=3) AS three_star,SUM(rating=2) AS two_star,SUM(rating=1) AS one_star FROM reviews WHERE hotel_id=?`,[req.params.id]);res.json(data[0]);}catch(err){res.status(500).json({error:err.message});}});
-app.get('/api/rooms', async(req,res)=>{const{q,check_in,check_out,guests}=req.query;try{let sql=`SELECT r.*,h.name AS hotel_name,h.city,h.country,h.star_rating,h.address,h.phone AS hotel_phone,h.email AS hotel_email,h.latitude,h.longitude,COALESCE(AVG(rv.rating),0) AS avg_rating,COUNT(rv.id) AS review_count FROM rooms r JOIN hotels h ON r.hotel_id=h.id LEFT JOIN reviews rv ON rv.hotel_id=h.id WHERE h.status='active' AND r.status='available'`;const params=[];if(q){sql+=' AND (h.city LIKE ? OR h.country LIKE ? OR h.name LIKE ? OR r.type LIKE ?)';const term=`%${q.split(',')[0].trim()}%`;params.push(term,term,term,term);}sql+=' GROUP BY r.id ORDER BY h.star_rating DESC, r.price ASC';const[dbRooms]=await db.query(sql,params);const localRooms=dbRooms.map(r=>({...r,source:'local'}));let amadeusRooms=[];const hotelWords=['hotel','resort','lodge','inn','palace','suites','golden','royal','grand','plaza','movenpick','alisa','miklin','kempinski','labadi','zaina','erata','senchi','alliance','kingstel','raybow','lancaster','mensvic'];const looksLikeHotelName=q?hotelWords.some(w=>q.toLowerCase().includes(w)):false;if(amadeusEnabled&&q&&!looksLikeHotelName){const iata=cityToIata(q);if(iata){const fetched=await fetchAmadeusHotels(iata,check_in,check_out,parseInt(guests)||1);if(fetched)amadeusRooms=fetched;}}res.json([...localRooms,...amadeusRooms]);}catch(err){res.status(500).json({error:err.message});}});
-app.get('/api/map/hotels', async(req,res)=>{const{q}=req.query;try{let sql=`SELECT h.id,h.name,h.city,h.country,h.star_rating,h.image_url,h.latitude,h.longitude,h.address,COALESCE(AVG(rv.rating),0) AS avg_rating,COUNT(rv.id) AS review_count,MIN(r.price) AS min_price FROM hotels h LEFT JOIN reviews rv ON rv.hotel_id=h.id LEFT JOIN rooms r ON r.hotel_id=h.id AND r.status='available' WHERE h.status='active' AND h.latitude IS NOT NULL`;const params=[];if(q){sql+=' AND (h.city LIKE ? OR h.country LIKE ? OR h.name LIKE ?)';const term=`%${q.split(',')[0].trim()}%`;params.push(term,term,term);}sql+=' GROUP BY h.id ORDER BY avg_rating DESC';const[data]=await db.query(sql,params);res.json(data);}catch(err){res.status(500).json({error:err.message});}});
-app.post('/api/bookings', optionalAuth, async(req,res)=>{const{room_id,customer_name,customer_email,customer_phone,check_in,check_out,guests,special_requests,source,offer_id,hotel_name:ext_hotel_name,price_usd}=req.body;if(!customer_name||!customer_email||!check_in||!check_out)return res.status(400).json({error:'Missing required fields.'});const nights=Math.ceil((new Date(check_out)-new Date(check_in))/86400000);if(nights<=0)return res.status(400).json({error:'Check-out must be after check-in.'});const user_id=req.user?.id||null;if(source==='amadeus'&&offer_id){const priceGHS=Math.round((price_usd||0)*15*nights);try{await db.query(`INSERT INTO bookings (room_id,hotel_id,user_id,customer_name,customer_email,customer_phone,check_in,check_out,nights,guests,total_price,commission_amount,hotel_payout,special_requests,status,hotel_notified,external_ref) VALUES (NULL,NULL,?,?,?,?,?,?,?,?,?,0,?,?,'confirmed',1,?)`,[user_id,customer_name,customer_email,customer_phone||null,check_in,check_out,nights,guests||1,priceGHS,priceGHS,special_requests||null,'AMADEUS-'+Date.now()]);}catch(e){console.error('Amadeus DB insert:',e.message);}if(customer_phone)sendSMS(customer_phone,`Hi ${customer_name}! Booking at ${ext_hotel_name} confirmed. Check-in: ${check_in}. - Amarya`);return res.json({success:true,booking_id:'AMADEUS-'+Date.now(),total_price:priceGHS,nights,hotel_name:ext_hotel_name||'External Hotel',source:'amadeus',hotel_payout:priceGHS,commission_amount:0});}if(!room_id)return res.status(400).json({error:'Missing room_id.'});try{const[rows]=await db.query(`SELECT r.*,h.name AS hotel_name,h.email AS hotel_email,h.commission,h.city,h.country,h.phone AS hotel_phone FROM rooms r JOIN hotels h ON r.hotel_id=h.id WHERE r.id=? AND r.status='available'`,[room_id]);if(!rows.length)return res.status(400).json({error:'Room not available.'});const room=rows[0];const total_price=room.price*nights;const commission_amount=parseFloat((total_price*room.commission/100).toFixed(2));const hotel_payout=parseFloat((total_price-commission_amount).toFixed(2));const[result]=await db.query(`INSERT INTO bookings (room_id,hotel_id,user_id,customer_name,customer_email,customer_phone,check_in,check_out,nights,guests,total_price,commission_amount,hotel_payout,special_requests,status,hotel_notified) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,'confirmed',0)`,[room_id,room.hotel_id,user_id,customer_name,customer_email,customer_phone||null,check_in,check_out,nights,guests||1,total_price,commission_amount,hotel_payout,special_requests||null]);await db.query("UPDATE rooms SET status='occupied' WHERE id=?",[room_id]);res.json({success:true,booking_id:result.insertId,total_price,nights,hotel_name:room.hotel_name,hotel_payout,commission_amount,source:'local'});const bookingNum=result.insertId;const rec={id:bookingNum,customer_name,customer_email,customer_phone,check_in,check_out,nights,guests:guests||1,special_requests,hotel_payout,commission_amount};notifyHotel({email:room.hotel_email,hotel_name:room.hotel_name},rec,room).then(()=>db.query("UPDATE bookings SET hotel_notified=1 WHERE id=?",[bookingNum])).catch(e=>console.error('Hotel notify error:',e.message));sendEmail(customer_email,`Booking Confirmed #${bookingNum} — ${room.hotel_name}`,`<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto"><div style="background:#0a0e17;padding:30px;text-align:center"><h1 style="color:#c4a050;letter-spacing:4px;margin:0">AMARYA</h1></div><div style="padding:30px;background:#f9f9f9"><h2>Booking Confirmed</h2><p>Dear <b>${customer_name}</b>, your reservation is confirmed.</p><table style="width:100%;border-collapse:collapse;margin:16px 0">${[['Booking #',bookingNum],['Hotel',room.hotel_name],['Room',`${room.type} #${room.room_number}`],['Check In',check_in],['Check Out',check_out],['Nights',nights],['Guests',guests||1],['Total',`GHS ${total_price.toLocaleString()}`]].map(([l,v],i)=>`<tr style="background:${i%2?'#fff':'#f5f5f5'}"><td style="padding:9px;color:#666;border:1px solid #eee">${l}</td><td style="padding:9px;font-weight:bold;border:1px solid #eee">${v}</td></tr>`).join('')}</table></div></div>`).catch(e=>console.error('Guest email:',e.message));if(customer_phone)sendSMS(customer_phone,`Hi ${customer_name}! Booking #${bookingNum} confirmed at ${room.hotel_name}. Check-in: ${check_in}. Total: GHS ${total_price.toLocaleString()}. - Amarya`).catch(()=>{});if(room.hotel_phone)sendSMS(room.hotel_phone,`New booking! Guest: ${customer_name}. Room: ${room.type} #${room.room_number}. Check-in: ${check_in}. Payout: GHS ${hotel_payout.toLocaleString()}.`).catch(()=>{});}catch(err){console.error('Booking error:',err.message);if(!res.headersSent)res.status(500).json({error:err.message});}});
-app.get('/api/bookings', async(req,res)=>{try{const[data]=await db.query(`SELECT b.*,COALESCE(r.type,'External Room') AS type,COALESCE(r.room_number,'EXT') AS room_number,COALESCE(r.image_url,'') AS image_url,COALESCE(h.name,b.external_ref) AS hotel_name,COALESCE(h.city,'') AS city,COALESCE(h.country,'') AS country FROM bookings b LEFT JOIN rooms r ON b.room_id=r.id LEFT JOIN hotels h ON b.hotel_id=h.id ORDER BY b.created_at DESC`);res.json(data);}catch(err){res.status(500).json({error:err.message});}});
-app.delete('/api/bookings/:id', async(req,res)=>{try{const[rows]=await db.query('SELECT room_id FROM bookings WHERE id=?',[req.params.id]);if(!rows.length)return res.status(404).json({error:'Not found'});await db.query('DELETE FROM bookings WHERE id=?',[req.params.id]);if(rows[0].room_id)await db.query("UPDATE rooms SET status='available' WHERE id=?",[rows[0].room_id]);res.json({success:true});}catch(err){res.status(500).json({error:err.message});}});
-app.get('/api/applications', async(req,res)=>{try{const[data]=await db.query('SELECT * FROM hotel_applications ORDER BY created_at DESC');res.json(data);}catch(err){res.status(500).json({error:err.message});}});
-app.get('/api/status', (req,res)=>{res.json({server:'online',email:emailEnabled?'enabled (Brevo HTTP API)':'DISABLED',sms:process.env.ARKESEL_API_KEY?'enabled':'simulated',amadeus:amadeusEnabled?'enabled':'disabled'});});
-setInterval(()=>{const http=require('http');http.get('http://localhost:5000/api/status',()=>console.log('Keep-alive OK')).on('error',()=>{});},5*60*1000);
+
+// Auth middleware
+function authMiddleware(req,res,next){
+  const token=req.headers.authorization?.split(' ')[1];
+  if(!token)return res.status(401).json({error:'No token'});
+  try{
+    req.user=jwt.verify(token,JWT_SECRET);
+    next();
+  }catch{
+    return res.status(401).json({error:'Invalid token'});
+  }
+}
+
+function optionalAuth(req,res,next){
+  const token=req.headers.authorization?.split(' ')[1];
+  if(token){
+    try{
+      req.user=jwt.verify(token,JWT_SECRET);
+    }catch{}
+  }
+  next();
+}
+
+// ============= ALL YOUR API ROUTES =============
+
+// Auth routes
+app.post('/api/auth/register', async(req,res)=>{
+  const{name,email,phone,password}=req.body;
+  if(!name||!email||!password)return res.status(400).json({error:'Name, email and password required.'});
+  if(password.length<6)return res.status(400).json({error:'Password min 6 characters.'});
+  try{
+    const[existing]=await db.query('SELECT id FROM users WHERE email=?',[email]);
+    if(existing.length)return res.status(400).json({error:'Email already registered.'});
+    const hash=await bcrypt.hash(password,10);
+    const[result]=await db.query('INSERT INTO users (name,email,phone,password_hash) VALUES (?,?,?,?)',[name,email,phone||null,hash]);
+    const token=jwt.sign({id:result.insertId,name,email},JWT_SECRET,{expiresIn:'30d'});
+    if(phone)sendSMS(phone,`Welcome to Amarya, ${name}! - Amarya`);
+    res.json({success:true,token,user:{id:result.insertId,name,email,phone}});
+  }catch(err){
+    res.status(500).json({error:err.message});
+  }
+});
+
+app.post('/api/auth/login', async(req,res)=>{
+  const{email,password}=req.body;
+  if(!email||!password)return res.status(400).json({error:'Email and password required.'});
+  try{
+    const[rows]=await db.query('SELECT * FROM users WHERE email=?',[email]);
+    if(!rows.length)return res.status(401).json({error:'Invalid email or password.'});
+    const user=rows[0];
+    if(!await bcrypt.compare(password,user.password_hash))return res.status(401).json({error:'Invalid email or password.'});
+    const token=jwt.sign({id:user.id,name:user.name,email:user.email},JWT_SECRET,{expiresIn:'30d'});
+    res.json({success:true,token,user:{id:user.id,name:user.name,email:user.email,phone:user.phone}});
+  }catch(err){
+    res.status(500).json({error:err.message});
+  }
+});
+
+app.get('/api/auth/me', authMiddleware, async(req,res)=>{
+  try{
+    const[rows]=await db.query('SELECT id,name,email,phone,created_at FROM users WHERE id=?',[req.user.id]);
+    if(!rows.length)return res.status(404).json({error:'Not found'});
+    res.json(rows[0]);
+  }catch(err){
+    res.status(500).json({error:err.message});
+  }
+});
+
+app.put('/api/auth/me', authMiddleware, async(req,res)=>{
+  const{name,phone,password}=req.body;
+  try{
+    if(password&&password.length>=6){
+      const hash=await bcrypt.hash(password,10);
+      await db.query('UPDATE users SET name=?,phone=?,password_hash=? WHERE id=?',[name,phone||null,hash,req.user.id]);
+    }else{
+      await db.query('UPDATE users SET name=?,phone=? WHERE id=?',[name,phone||null,req.user.id]);
+    }
+    res.json({success:true});
+  }catch(err){
+    res.status(500).json({error:err.message});
+  }
+});
+
+app.get('/api/auth/bookings', authMiddleware, async(req,res)=>{
+  try{
+    const[data]=await db.query(`
+      SELECT b.*,COALESCE(r.type,'External Room') AS type,
+             COALESCE(r.room_number,'EXT') AS room_number,
+             COALESCE(r.image_url,'') AS image_url,
+             COALESCE(h.name,b.external_ref) AS hotel_name,
+             COALESCE(h.city,'') AS city,
+             COALESCE(h.country,'') AS country 
+      FROM bookings b 
+      LEFT JOIN rooms r ON b.room_id=r.id 
+      LEFT JOIN hotels h ON b.hotel_id=h.id 
+      WHERE b.user_id=? 
+      ORDER BY b.created_at DESC
+    `,[req.user.id]);
+    res.json(data);
+  }catch(err){
+    res.status(500).json({error:err.message});
+  }
+});
+
+// Hotel routes
+app.get('/api/hotels', async(req,res)=>{
+  const{q}=req.query;
+  try{
+    let sql=`SELECT h.*,COALESCE(AVG(rv.rating),0) AS avg_rating,COUNT(rv.id) AS review_count FROM hotels h LEFT JOIN reviews rv ON rv.hotel_id=h.id WHERE h.status='active'`;
+    const params=[];
+    if(q){
+      sql+=' AND (h.city LIKE ? OR h.country LIKE ? OR h.name LIKE ?)';
+      const t=`%${q}%`;
+      params.push(t,t,t);
+    }
+    sql+=' GROUP BY h.id ORDER BY avg_rating DESC, h.star_rating DESC';
+    const[data]=await db.query(sql,params);
+    res.json(data);
+  }catch(err){
+    res.status(500).json({error:err.message});
+  }
+});
+
+app.get('/api/hotels/:id', async(req,res)=>{
+  try{
+    const[hotels]=await db.query('SELECT * FROM hotels WHERE id=?',[req.params.id]);
+    if(!hotels.length)return res.status(404).json({error:'Hotel not found'});
+    const[rooms]=await db.query('SELECT * FROM rooms WHERE hotel_id=? ORDER BY price ASC',[hotels[0].id]);
+    const[reviews]=await db.query('SELECT * FROM reviews WHERE hotel_id=? ORDER BY created_at DESC LIMIT 20',[hotels[0].id]);
+    res.json({...hotels[0],rooms,reviews});
+  }catch(err){
+    res.status(500).json({error:err.message});
+  }
+});
+
+app.post('/api/hotels/apply', async(req,res)=>{
+  const{hotel_name,city,country,contact_name,email,phone,message}=req.body;
+  if(!hotel_name||!city||!country||!contact_name||!email)return res.status(400).json({error:'Missing fields.'});
+  try{
+    const[result]=await db.query('INSERT INTO hotel_applications (hotel_name,city,country,contact_name,email,phone,message) VALUES (?,?,?,?,?,?,?)',[hotel_name,city,country,contact_name,email,phone||null,message||null]);
+    if(SENDER_EMAIL)sendEmail(SENDER_EMAIL,`New Partner: ${hotel_name}`,`<p><b>Hotel:</b> ${hotel_name}</p><p><b>Location:</b> ${city}, ${country}</p><p><b>Contact:</b> ${contact_name}</p><p><b>Email:</b> ${email}</p><p><b>Message:</b> ${message||'N/A'}</p>`);
+    res.json({success:true,application_id:result.insertId});
+  }catch(err){
+    res.status(500).json({error:err.message});
+  }
+});
+
+// Contact route
+app.post('/api/contact', async(req,res)=>{
+  const{name,email,subject,message}=req.body;
+  if(!name||!email||!message)return res.status(400).json({error:'Name, email and message required.'});
+  console.log('Contact from',name,'<'+email+'>');
+  sendEmail(SENDER_EMAIL||email,`Contact: ${subject||'New Message'} from ${name}`,`<div style="font-family:Arial,sans-serif;padding:20px"><h2>New Contact Message</h2><p><b>Name:</b> ${name}</p><p><b>Email:</b> ${email}</p><p><b>Subject:</b> ${subject||'N/A'}</p><p><b>Message:</b> ${message}</p><p>Reply to: <a href="mailto:${email}">${email}</a></p></div>`);
+  sendEmail(email,'Message received — Amarya',`<div style="font-family:Arial,sans-serif;padding:20px"><h2>Hi ${name},</h2><p>We received your message and will reply within 24 hours.</p><p style="color:#888;font-style:italic">"${message}"</p><p>Best,<br><b>The Amarya Team</b></p></div>`);
+  res.json({success:true});
+});
+
+// Review routes
+app.get('/api/hotels/:id/reviews', async(req,res)=>{
+  try{
+    const[data]=await db.query('SELECT * FROM reviews WHERE hotel_id=? ORDER BY created_at DESC',[req.params.id]);
+    res.json(data);
+  }catch(err){
+    res.status(500).json({error:err.message});
+  }
+});
+
+app.post('/api/hotels/:id/reviews', optionalAuth, async(req,res)=>{
+  const{guest_name,rating,comment,stay_date}=req.body;
+  if(!guest_name||!rating)return res.status(400).json({error:'Name and rating required.'});
+  if(rating<1||rating>5)return res.status(400).json({error:'Rating 1-5.'});
+  try{
+    const[result]=await db.query('INSERT INTO reviews (hotel_id,user_id,guest_name,rating,comment,stay_date) VALUES (?,?,?,?,?,?)',[req.params.id,req.user?.id||null,guest_name,rating,comment||null,stay_date||null]);
+    res.json({success:true,review_id:result.insertId});
+  }catch(err){
+    res.status(500).json({error:err.message});
+  }
+});
+
+app.get('/api/hotels/:id/rating', async(req,res)=>{
+  try{
+    const[data]=await db.query(`
+      SELECT COUNT(*) AS total,ROUND(AVG(rating),1) AS average,
+             SUM(rating=5) AS five_star,SUM(rating=4) AS four_star,
+             SUM(rating=3) AS three_star,SUM(rating=2) AS two_star,
+             SUM(rating=1) AS one_star 
+      FROM reviews WHERE hotel_id=?
+    `,[req.params.id]);
+    res.json(data[0]);
+  }catch(err){
+    res.status(500).json({error:err.message});
+  }
+});
+
+// Rooms route
+app.get('/api/rooms', async(req,res)=>{
+  const{q,check_in,check_out,guests}=req.query;
+  try{
+    let sql=`SELECT r.*,h.name AS hotel_name,h.city,h.country,h.star_rating,h.address,h.phone AS hotel_phone,
+                    h.email AS hotel_email,h.latitude,h.longitude,COALESCE(AVG(rv.rating),0) AS avg_rating,
+                    COUNT(rv.id) AS review_count 
+             FROM rooms r 
+             JOIN hotels h ON r.hotel_id=h.id 
+             LEFT JOIN reviews rv ON rv.hotel_id=h.id 
+             WHERE h.status='active' AND r.status='available'`;
+    const params=[];
+    if(q){
+      sql+=' AND (h.city LIKE ? OR h.country LIKE ? OR h.name LIKE ? OR r.type LIKE ?)';
+      const term=`%${q.split(',')[0].trim()}%`;
+      params.push(term,term,term,term);
+    }
+    sql+=' GROUP BY r.id ORDER BY h.star_rating DESC, r.price ASC';
+    const[dbRooms]=await db.query(sql,params);
+    const localRooms=dbRooms.map(r=>({...r,source:'local'}));
+    
+    let amadeusRooms=[];
+    const hotelWords=['hotel','resort','lodge','inn','palace','suites','golden','royal','grand','plaza','movenpick','alisa','miklin','kempinski','labadi','zaina','erata','senchi','alliance','kingstel','raybow','lancaster','mensvic'];
+    const looksLikeHotelName=q?hotelWords.some(w=>q.toLowerCase().includes(w)):false;
+    
+    if(amadeusEnabled&&q&&!looksLikeHotelName){
+      const iata=cityToIata(q);
+      if(iata){
+        const fetched=await fetchAmadeusHotels(iata,check_in,check_out,parseInt(guests)||1);
+        if(fetched)amadeusRooms=fetched;
+      }
+    }
+    res.json([...localRooms,...amadeusRooms]);
+  }catch(err){
+    res.status(500).json({error:err.message});
+  }
+});
+
+// Map hotels route
+app.get('/api/map/hotels', async(req,res)=>{
+  const{q}=req.query;
+  try{
+    let sql=`SELECT h.id,h.name,h.city,h.country,h.star_rating,h.image_url,
+                    h.latitude,h.longitude,h.address,COALESCE(AVG(rv.rating),0) AS avg_rating,
+                    COUNT(rv.id) AS review_count,MIN(r.price) AS min_price 
+             FROM hotels h 
+             LEFT JOIN reviews rv ON rv.hotel_id=h.id 
+             LEFT JOIN rooms r ON r.hotel_id=h.id AND r.status='available' 
+             WHERE h.status='active' AND h.latitude IS NOT NULL`;
+    const params=[];
+    if(q){
+      sql+=' AND (h.city LIKE ? OR h.country LIKE ? OR h.name LIKE ?)';
+      const term=`%${q.split(',')[0].trim()}%`;
+      params.push(term,term,term);
+    }
+    sql+=' GROUP BY h.id ORDER BY avg_rating DESC';
+    const[data]=await db.query(sql,params);
+    res.json(data);
+  }catch(err){
+    res.status(500).json({error:err.message});
+  }
+});
+
+// Bookings route
+app.post('/api/bookings', optionalAuth, async(req,res)=>{
+  const{room_id,customer_name,customer_email,customer_phone,check_in,check_out,guests,special_requests,source,offer_id,hotel_name:ext_hotel_name,price_usd}=req.body;
+  if(!customer_name||!customer_email||!check_in||!check_out)return res.status(400).json({error:'Missing required fields.'});
+  const nights=Math.ceil((new Date(check_out)-new Date(check_in))/86400000);
+  if(nights<=0)return res.status(400).json({error:'Check-out must be after check-in.'});
+  const user_id=req.user?.id||null;
+  
+  if(source==='amadeus'&&offer_id){
+    const priceGHS=Math.round((price_usd||0)*15*nights);
+    try{
+      await db.query(`
+        INSERT INTO bookings (room_id,hotel_id,user_id,customer_name,customer_email,customer_phone,
+                              check_in,check_out,nights,guests,total_price,commission_amount,
+                              hotel_payout,special_requests,status,hotel_notified,external_ref) 
+        VALUES (NULL,NULL,?,?,?,?,?,?,?,?,?,0,?,?,'confirmed',1,?)
+      `,[user_id,customer_name,customer_email,customer_phone||null,check_in,check_out,nights,guests||1,
+         priceGHS,priceGHS,special_requests||null,'AMADEUS-'+Date.now()]);
+    }catch(e){
+      console.error('Amadeus DB insert:',e.message);
+    }
+    if(customer_phone)sendSMS(customer_phone,`Hi ${customer_name}! Booking at ${ext_hotel_name} confirmed. Check-in: ${check_in}. - Amarya`);
+    return res.json({
+      success:true,booking_id:'AMADEUS-'+Date.now(),
+      total_price:priceGHS,nights,hotel_name:ext_hotel_name||'External Hotel',
+      source:'amadeus',hotel_payout:priceGHS,commission_amount:0
+    });
+  }
+  
+  if(!room_id)return res.status(400).json({error:'Missing room_id.'});
+  
+  try{
+    const[rows]=await db.query(`
+      SELECT r.*,h.name AS hotel_name,h.email AS hotel_email,h.commission,
+             h.city,h.country,h.phone AS hotel_phone 
+      FROM rooms r 
+      JOIN hotels h ON r.hotel_id=h.id 
+      WHERE r.id=? AND r.status='available'
+    `,[room_id]);
+    
+    if(!rows.length)return res.status(400).json({error:'Room not available.'});
+    const room=rows[0];
+    const total_price=room.price*nights;
+    const commission_amount=parseFloat((total_price*room.commission/100).toFixed(2));
+    const hotel_payout=parseFloat((total_price-commission_amount).toFixed(2));
+    
+    const[result]=await db.query(`
+      INSERT INTO bookings (room_id,hotel_id,user_id,customer_name,customer_email,customer_phone,
+                            check_in,check_out,nights,guests,total_price,commission_amount,
+                            hotel_payout,special_requests,status,hotel_notified) 
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,'confirmed',0)
+    `,[room_id,room.hotel_id,user_id,customer_name,customer_email,customer_phone||null,
+       check_in,check_out,nights,guests||1,total_price,commission_amount,
+       hotel_payout,special_requests||null]);
+    
+    await db.query("UPDATE rooms SET status='occupied' WHERE id=?",[room_id]);
+    
+    res.json({
+      success:true,booking_id:result.insertId,total_price,nights,
+      hotel_name:room.hotel_name,hotel_payout,commission_amount,source:'local'
+    });
+    
+    const bookingNum=result.insertId;
+    const rec={
+      id:bookingNum,customer_name,customer_email,customer_phone,
+      check_in,check_out,nights,guests:guests||1,special_requests,
+      hotel_payout,commission_amount
+    };
+    
+    notifyHotel({email:room.hotel_email,hotel_name:room.hotel_name},rec,room)
+      .then(()=>db.query("UPDATE bookings SET hotel_notified=1 WHERE id=?",[bookingNum]))
+      .catch(e=>console.error('Hotel notify error:',e.message));
+    
+    sendEmail(customer_email,`Booking Confirmed #${bookingNum} — ${room.hotel_name}`,`
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
+        <div style="background:#0a0e17;padding:30px;text-align:center">
+          <h1 style="color:#c4a050;letter-spacing:4px;margin:0">AMARYA</h1>
+        </div>
+        <div style="padding:30px;background:#f9f9f9">
+          <h2>Booking Confirmed</h2>
+          <p>Dear <b>${customer_name}</b>, your reservation is confirmed.</p>
+          <table style="width:100%;border-collapse:collapse;margin:16px 0">
+            ${[['Booking #',bookingNum],['Hotel',room.hotel_name],['Room',`${room.type} #${room.room_number}`],
+               ['Check In',check_in],['Check Out',check_out],['Nights',nights],
+               ['Guests',guests||1],['Total',`GHS ${total_price.toLocaleString()}`]]
+              .map(([l,v],i)=>`<tr style="background:${i%2?'#fff':'#f5f5f5'}">
+                <td style="padding:9px;color:#666;border:1px solid #eee">${l}</td>
+                <td style="padding:9px;font-weight:bold;border:1px solid #eee">${v}</td>
+              </tr>`).join('')}
+          </table>
+        </div>
+      </div>
+    `).catch(e=>console.error('Guest email:',e.message));
+    
+    if(customer_phone)sendSMS(customer_phone,`Hi ${customer_name}! Booking #${bookingNum} confirmed at ${room.hotel_name}. Check-in: ${check_in}. Total: GHS ${total_price.toLocaleString()}. - Amarya`).catch(()=>{});
+    if(room.hotel_phone)sendSMS(room.hotel_phone,`New booking! Guest: ${customer_name}. Room: ${room.type} #${room.room_number}. Check-in: ${check_in}. Payout: GHS ${hotel_payout.toLocaleString()}.`).catch(()=>{});
+    
+  }catch(err){
+    console.error('Booking error:',err.message);
+    if(!res.headersSent)res.status(500).json({error:err.message});
+  }
+});
+
+app.get('/api/bookings', async(req,res)=>{
+  try{
+    const[data]=await db.query(`
+      SELECT b.*,COALESCE(r.type,'External Room') AS type,
+             COALESCE(r.room_number,'EXT') AS room_number,
+             COALESCE(r.image_url,'') AS image_url,
+             COALESCE(h.name,b.external_ref) AS hotel_name,
+             COALESCE(h.city,'') AS city,COALESCE(h.country,'') AS country 
+      FROM bookings b 
+      LEFT JOIN rooms r ON b.room_id=r.id 
+      LEFT JOIN hotels h ON b.hotel_id=h.id 
+      ORDER BY b.created_at DESC
+    `);
+    res.json(data);
+  }catch(err){
+    res.status(500).json({error:err.message});
+  }
+});
+
+app.delete('/api/bookings/:id', async(req,res)=>{
+  try{
+    const[rows]=await db.query('SELECT room_id FROM bookings WHERE id=?',[req.params.id]);
+    if(!rows.length)return res.status(404).json({error:'Not found'});
+    await db.query('DELETE FROM bookings WHERE id=?',[req.params.id]);
+    if(rows[0].room_id)await db.query("UPDATE rooms SET status='available' WHERE id=?",[rows[0].room_id]);
+    res.json({success:true});
+  }catch(err){
+    res.status(500).json({error:err.message});
+  }
+});
+
+app.get('/api/applications', async(req,res)=>{
+  try{
+    const[data]=await db.query('SELECT * FROM hotel_applications ORDER BY created_at DESC');
+    res.json(data);
+  }catch(err){
+    res.status(500).json({error:err.message});
+  }
+});
+
+// Keep-alive endpoint
+app.get('/api/status', (req, res) => {
+  res.json({ 
+    server: 'online', 
+    email: emailEnabled ? 'enabled (Brevo HTTP API)' : 'DISABLED',
+    sms: process.env.ARKESEL_API_KEY ? 'enabled' : 'simulated',
+    amadeus: amadeusEnabled ? 'enabled' : 'disabled',
+    database: 'connected',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// 404 handler for undefined routes
+app.use('*', (req, res) => {
+  res.status(404).json({ 
+    error: 'Route not found', 
+    path: req.originalUrl,
+    availableEndpoints: ['/', '/api/status', '/api/test', '/api/hotels', '/api/rooms', '/api/bookings', '/api/auth']
+  });
+});
+
+// Keep-alive interval
+setInterval(()=>{
+  const http=require('http');
+  http.get('http://localhost:5000/api/status',()=>console.log('Keep-alive OK')).on('error',()=>{});
+},5*60*1000);
+
 const PORT=process.env.PORT||5000;
-app.listen(PORT,()=>{console.log(`\nAmarya running on port ${PORT}`);console.log(`Email:   ${emailEnabled?'ENABLED (Brevo HTTP API)':'DISABLED'}`);console.log(`SMS:     ${process.env.ARKESEL_API_KEY?'ENABLED':'SIMULATED'}`);console.log(`Amadeus: ${amadeusEnabled?'ENABLED':'DISABLED'}\n`);});
+app.listen(PORT,()=>{
+  console.log(`\nAmarya running on port ${PORT}`);
+  console.log(`Email:   ${emailEnabled?'ENABLED (Brevo HTTP API)':'DISABLED'}`);
+  console.log(`SMS:     ${process.env.ARKESEL_API_KEY?'ENABLED':'SIMULATED'}`);
+  console.log(`Amadeus: ${amadeusEnabled?'ENABLED':'DISABLED'}\n`);
+});
