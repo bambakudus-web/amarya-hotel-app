@@ -32,7 +32,9 @@ db.connect((err) => {
 //  EMAIL
 // ─────────────────────────────────────────────────────────
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true,
   auth: { user: process.env.EMAIL_USER || '', pass: process.env.EMAIL_PASS || '' }
 });
 const emailEnabled = !!(process.env.EMAIL_USER && process.env.EMAIL_PASS);
@@ -46,20 +48,9 @@ async function sendEmail(to, subject, html) {
 }
 
 async function notifyHotel(hotel, booking, room) {
-  await sendEmail(hotel.email, `New Booking #${booking.id} — ${room.type}`, `
-    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
-      <div style="background:#0a0e17;padding:30px;text-align:center;">
-        <h1 style="color:#c4a050;letter-spacing:4px;margin:0;">AMARYA</h1>
-      </div>
-      <div style="background:#f9f9f9;padding:30px;">
-        <h2>New Booking Received</h2>
-        <table style="width:100%;border-collapse:collapse;">
-          ${[['Booking ID',`#${booking.id}`],['Guest',booking.customer_name],['Email',booking.customer_email],['Phone',booking.customer_phone||'N/A'],['Room',`${room.type} — Room ${room.room_number}`],['Check In',booking.check_in],['Check Out',booking.check_out],['Nights',booking.nights],['Guests',booking.guests],['Special Requests',booking.special_requests||'None']].map(([l,v],i)=>`<tr style="background:${i%2?'#fff':'transparent'}"><td style="padding:8px;color:#666;">${l}</td><td style="padding:8px;font-weight:bold;">${v}</td></tr>`).join('')}
-          <tr style="background:#c4a050;"><td style="padding:10px;color:#000;font-weight:bold;">Your Payout</td><td style="padding:10px;color:#000;font-weight:bold;font-size:18px;">GHS ${Number(booking.hotel_payout).toLocaleString()}</td></tr>
-        </table>
-      </div>
-    </div>
-  `);
+  const html = `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;"><div style="background:#0a0e17;padding:30px;text-align:center;"><h1 style="color:#c4a050;letter-spacing:4px;margin:0;">AMARYA</h1></div><div style="background:#f9f9f9;padding:30px;"><h2>New Booking Received</h2><table style="width:100%;border-collapse:collapse;">${[['Booking ID','#'+booking.id],['Guest',booking.customer_name],['Email',booking.customer_email],['Phone',booking.customer_phone||'N/A'],['Room',room.type+' — Room '+room.room_number],['Check In',booking.check_in],['Check Out',booking.check_out],['Nights',booking.nights],['Guests',booking.guests],['Special Requests',booking.special_requests||'None']].map(([l,v],i)=>'<tr style="background:'+(i%2?'#fff':'transparent')+'"><td style="padding:8px;color:#666;">'+l+'</td><td style="padding:8px;font-weight:bold;">'+v+'</td></tr>').join('')}<tr style="background:#c4a050;"><td style="padding:10px;color:#000;font-weight:bold;">Payout</td><td style="padding:10px;color:#000;font-weight:bold;">GHS '+Number(booking.hotel_payout).toLocaleString()+'</td></tr></table></div></div>`;
+  await sendEmail(hotel.email, 'New Booking #'+booking.id+' — '+room.type, html);
+  await sendEmail(process.env.EMAIL_USER, '[ADMIN] Booking #'+booking.id+' — '+room.hotel_name, html);
 }
 
 // ─────────────────────────────────────────────────────────
