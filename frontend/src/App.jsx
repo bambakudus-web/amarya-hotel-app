@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
 
 // CHANGE THIS LINE - Updated to connect to local backend
-const API = "http://localhost:5000";
+const API = "https://amarya-hotel-app-production.up.railway.app";
 
 const AMENITY_ICONS = {
   "Free WiFi":"📶","King Bed":"🛏️","Ocean View":"🌊","Balcony":"🏠","Jacuzzi":"♨️",
