@@ -52,7 +52,7 @@ const SENDER_EMAIL  = process.env.SENDER_EMAIL  || process.env.EMAIL_USER || '';
 const emailEnabled  = !!(BREVO_API_KEY && SENDER_EMAIL);
 console.log('Email:', emailEnabled ? 'ENABLED via Brevo HTTP API' : 'DISABLED');
 
-// ============= ADDED ROOT ROUTE HERE =============
+// ============= ROOT ROUTE =============
 app.get('/', (req, res) => {
   res.json({ 
     message: 'Amarya API is running', 
@@ -60,6 +60,7 @@ app.get('/', (req, res) => {
     timestamp: new Date().toISOString(),
     endpoints: {
       status: '/api/status',
+      test: '/api/test',
       hotels: '/api/hotels',
       rooms: '/api/rooms',
       bookings: '/api/bookings',
@@ -68,7 +69,7 @@ app.get('/', (req, res) => {
   });
 });
 
-// ============= IMPROVED STATUS ENDPOINT =============
+// ============= STATUS ENDPOINT =============
 app.get('/api/status', (req, res) => {
   res.json({ 
     server: 'online', 
@@ -623,20 +624,9 @@ app.get('/api/applications', async(req,res)=>{
   }
 });
 
-// Keep-alive endpoint
-app.get('/api/status', (req, res) => {
-  res.json({ 
-    server: 'online', 
-    email: emailEnabled ? 'enabled (Brevo HTTP API)' : 'DISABLED',
-    sms: process.env.ARKESEL_API_KEY ? 'enabled' : 'simulated',
-    amadeus: amadeusEnabled ? 'enabled' : 'disabled',
-    database: 'connected',
-    timestamp: new Date().toISOString()
-  });
-});
-
-// 404 handler for undefined routes
-app.use('*', (req, res) => {
+// ============= FIXED 404 HANDLER - THIS WAS THE PROBLEM =============
+// Use this instead of app.use('*', ...)
+app.use((req, res) => {
   res.status(404).json({ 
     error: 'Route not found', 
     path: req.originalUrl,

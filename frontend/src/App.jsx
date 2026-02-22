@@ -2,7 +2,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
 
-const API = "https://amarya-hotel-app-production.up.railway.app";
+// CHANGE THIS LINE - Updated to connect to local backend
+const API = "http://localhost:5000";
 
 const AMENITY_ICONS = {
   "Free WiFi":"📶","King Bed":"🛏️","Ocean View":"🌊","Balcony":"🏠","Jacuzzi":"♨️",
