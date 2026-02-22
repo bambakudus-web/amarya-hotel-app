@@ -31,14 +31,17 @@ db.connect((err) => {
 // ─────────────────────────────────────────────────────────
 //  EMAIL
 // ─────────────────────────────────────────────────────────
+// Brevo SMTP works on Railway (Gmail blocks outgoing SMTP)
 const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
+  host: 'smtp-relay.brevo.com',
   port: 587,
   secure: false,
-  requireTLS: true,
-  auth: { user: process.env.EMAIL_USER || '', pass: process.env.EMAIL_PASS || '' }
+  auth: {
+    user: process.env.BREVO_USER || process.env.EMAIL_USER || '',
+    pass: process.env.BREVO_PASS || process.env.EMAIL_PASS || ''
+  }
 });
-const emailEnabled = !!(process.env.EMAIL_USER && process.env.EMAIL_PASS);
+const emailEnabled = !!(process.env.BREVO_USER || process.env.EMAIL_USER);
 
 async function sendEmail(to, subject, html) {
   if (!emailEnabled) { console.log(`📧 [SIM] To: ${to} | ${subject}`); return; }
