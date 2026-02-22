@@ -588,25 +588,32 @@ app.post('/api/bookings', optionalAuth, async (req, res) => {
           .then(() => db.query("UPDATE bookings SET hotel_notified=1 WHERE id=?", [result.insertId]))
           .catch(e => console.error('Email error:', e.message));
 
-        // SMS to guest
-        if (customer_phone) {
-          await sendSMS(customer_phone,
-            `Hi ${customer_name}! Your booking at ${room.hotel_name} is confirmed. Room: ${room.type}. Check-in: ${check_in}. Check-out: ${check_out}. Total: GHS ${total_price.toLocaleString()}. Booking #${result.insertId}. - Amarya`
-          );
-        }
-
-        // SMS to hotel (if hotel has a phone)
-        if (room.hotel_phone) {
-          await sendSMS(room.hotel_phone,
-            `New Amarya booking! Guest: ${customer_name}. Room: ${room.type} #${room.room_number}. Check-in: ${check_in}. Check-out: ${check_out}. Your payout: GHS ${hotel_payout.toLocaleString()}.`
-          );
-        }
-
+        // Respond immediately
         res.json({
           success:true, booking_id:result.insertId,
           total_price, nights, hotel_name:room.hotel_name,
           hotel_payout, commission_amount, source:'local'
         });
+
+        // SMS and email in background - non blocking
+        const bookingNum = result.insertId;
+        if (customer_phone) {
+          sendSMS(customer_phone,
+            'Hi '+customer_name+'! Booking #'+bookingNum+' confirmed at '+room.hotel_name+'. Room: '+room.type+'. Check-in: '+check_in+'. Check-out: '+check_out+'. Total: GHS '+total_price.toLocaleString()+'. - Amarya'
+          ).catch(e => console.error('Guest SMS failed:', e.message));
+        }
+        if (room.hotel_phone) {
+          sendSMS(room.hotel_phone,
+            'New Amarya booking! Guest: '+customer_name+'. Room: '+room.type+' #'+room.room_number+'. Check-in: '+check_in+'. Payout: GHS '+hotel_payout.toLocaleString()+'.'
+          ).catch(e => console.error('Hotel SMS failed:', e.message));
+        }
+        // Guest confirmation email
+        sendEmail(customer_email,
+          'Booking Confirmed #'+bookingNum+' — '+room.hotel_name,
+          '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;"><div style="background:#0a0e17;padding:30px;text-align:center;"><h1 style="color:#c4a050;letter-spacing:4px;margin:0;">AMARYA</h1></div><div style="background:#f9f9f9;padding:30px;"><h2 style="color:#333;">Booking Confirmed ✓</h2><p>Dear '+customer_name+', your reservation is confirmed.</p><table style="width:100%;border-collapse:collapse;margin:20px 0;">'+
+          [['Booking #', bookingNum],['Hotel', room.hotel_name],['Room', room.type+' — #'+room.room_number],['Check In', check_in],['Check Out', check_out],['Nights', nights],['Guests', guests||1],['Total', 'GHS '+total_price.toLocaleString()]].map(([l,v],i)=>'<tr style="background:'+(i%2?'#fff':'#f5f5f5')+'"><td style="padding:10px;color:#666;border:1px solid #eee;">'+l+'</td><td style="padding:10px;font-weight:bold;border:1px solid #eee;">'+v+'</td></tr>').join('')+
+          '</table><p style="color:#666;">Thank you for choosing Amarya. We look forward to welcoming you.</p></div><div style="background:#0a0e17;padding:20px;text-align:center;"><p style="color:#c4a050;margin:0;">amarya.netlify.app</p></div></div>'
+        ).catch(e => console.error('Guest email failed:', e.message));
       }
     );
   });
@@ -663,6 +670,14 @@ app.get('/api/status', (req, res) => {
     sms:     process.env.ARKESEL_API_KEY ? 'enabled' : 'simulated',
   });
 });
+
+// Keep-alive ping every 5 minutes to prevent Railway from sleeping
+setInterval(() => {
+  const http = require('http');
+  http.get('http://localhost:5000/api/status', (res) => {
+    console.log('🔄 Keep-alive ping OK');
+  }).on('error', () => {});
+}, 5 * 60 * 1000);
 
 const PORT = 5000;
 app.listen(PORT, () => {
