@@ -1,10 +1,11 @@
 const express    = require('express');
-const mysql      = require('mysql2');
 const cors       = require('cors');
-const nodemailer = require('nodemailer');
 const axios      = require('axios');
 const bcrypt     = require('bcryptjs');
 const jwt        = require('jsonwebtoken');
+
+// ── mysql2/promise fixes the .then()/.catch() error in logs ──
+const mysql = require('mysql2/promise');
 
 const app = express();
 app.use(cors());
@@ -13,40 +14,41 @@ app.use(express.json());
 const JWT_SECRET = process.env.JWT_SECRET || 'amarya_secret_2026';
 
 // ─────────────────────────────────────────────────────────
-//  DATABASE
+//  DATABASE  (promise-based pool)
 // ─────────────────────────────────────────────────────────
-const db = mysql.createConnection({
+const db = mysql.createPool({
   host:     process.env.MYSQLHOST     || process.env.DB_HOST     || '127.0.0.1',
   port:     process.env.MYSQLPORT     || process.env.DB_PORT     || 3306,
   user:     process.env.MYSQLUSER     || process.env.DB_USER     || 'root',
   password: process.env.MYSQLPASSWORD || process.env.DB_PASSWORD || '',
   database: process.env.MYSQLDATABASE || process.env.DB_NAME     || 'amarya_db',
+  waitForConnections: true,
+  connectionLimit: 10,
 });
 
-db.connect((err) => {
-  if (err) { console.error('❌ DB failed:', err.message); return; }
-  console.log('✅ Connected to MySQL database');
-});
-
-// ─────────────────────────────────────────────────────────
-//  EMAIL  — Brevo SMTP
-// ─────────────────────────────────────────────────────────
-const transporter = nodemailer.createTransport({
-  host: 'smtp-relay.brevo.com',
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.BREVO_USER || process.env.EMAIL_USER || '',
-    pass: process.env.BREVO_PASS || process.env.EMAIL_PASS || ''
+(async () => {
+  try {
+    await db.query('SELECT 1');
+    console.log('✅ Connected to MySQL database');
+  } catch (err) {
+    console.error('❌ DB failed:', err.message);
   }
-});
+})();
 
-const emailEnabled = !!(
-  (process.env.BREVO_USER || process.env.EMAIL_USER) &&
-  (process.env.BREVO_PASS || process.env.EMAIL_PASS)
-);
+// ─────────────────────────────────────────────────────────
+//  EMAIL — Brevo HTTP API
+//  Railway blocks SMTP (port 587) — HTTP API works fine.
+//
+//  Go to brevo.com → Settings → API Keys → Generate API Key
+//  Set Railway env vars:
+//    BREVO_API_KEY  = your api key (starts with xkeysib-)
+//    SENDER_EMAIL   = your verified sender email in Brevo
+// ─────────────────────────────────────────────────────────
+const BREVO_API_KEY = process.env.BREVO_API_KEY || '';
+const SENDER_EMAIL  = process.env.SENDER_EMAIL  || process.env.EMAIL_USER || '';
+const emailEnabled  = !!(BREVO_API_KEY && SENDER_EMAIL);
 
-console.log(`📧 Email: ${emailEnabled ? 'ENABLED (Brevo SMTP)' : 'DISABLED — set BREVO_USER and BREVO_PASS'}`);
+console.log(`📧 Email: ${emailEnabled ? 'ENABLED (Brevo HTTP API)' : 'DISABLED — set BREVO_API_KEY and SENDER_EMAIL in Railway'}`);
 
 async function sendEmail(to, subject, html) {
   if (!emailEnabled) {
@@ -54,15 +56,24 @@ async function sendEmail(to, subject, html) {
     return;
   }
   try {
-    const info = await transporter.sendMail({
-      from: `"Amarya Hotels" <${process.env.BREVO_USER || process.env.EMAIL_USER}>`,
-      to,
-      subject,
-      html
-    });
-    console.log(`✅ Email sent to ${to} — ID: ${info.messageId}`);
+    await axios.post(
+      'https://api.brevo.com/v3/smtp/email',
+      {
+        sender:      { name: 'Amarya Hotels', email: SENDER_EMAIL },
+        to:          [{ email: to }],
+        subject,
+        htmlContent: html,
+      },
+      {
+        headers: {
+          'api-key':      BREVO_API_KEY,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    console.log(`✅ Email sent to ${to}`);
   } catch (e) {
-    console.error(`❌ Email failed to ${to}:`, e.message);
+    console.error(`❌ Email failed to ${to}:`, e.response?.data || e.message);
   }
 }
 
@@ -104,18 +115,8 @@ async function notifyHotel(hotel, booking, room) {
       </div>
     </div>`;
 
-  // Notify hotel
-  if (hotel.email) {
-    await sendEmail(hotel.email, `New Booking #${booking.id} — ${room.type}`, html);
-  }
-  // Notify admin
-  if (process.env.BREVO_USER || process.env.EMAIL_USER) {
-    await sendEmail(
-      process.env.BREVO_USER || process.env.EMAIL_USER,
-      `[ADMIN] Booking #${booking.id} — ${room.hotel_name}`,
-      html
-    );
-  }
+  if (hotel.email) await sendEmail(hotel.email, `New Booking #${booking.id} — ${room.type}`, html);
+  if (SENDER_EMAIL) await sendEmail(SENDER_EMAIL, `[ADMIN] Booking #${booking.id} — ${room.hotel_name}`, html);
 }
 
 // ─────────────────────────────────────────────────────────
@@ -123,22 +124,16 @@ async function notifyHotel(hotel, booking, room) {
 // ─────────────────────────────────────────────────────────
 async function sendSMS(phone, message) {
   const apiKey = process.env.ARKESEL_API_KEY;
-  if (!apiKey) {
-    console.log(`📱 [SMS SIM] To: ${phone} | ${message}`);
-    return;
-  }
+  if (!apiKey) { console.log(`📱 [SMS SIM] To: ${phone} | ${message}`); return; }
   let formatted = phone.replace(/\D/g, '');
   if (formatted.startsWith('0')) formatted = '233' + formatted.slice(1);
   if (!formatted.startsWith('233')) formatted = '233' + formatted;
-
   try {
     await axios.get('https://sms.arkesel.com/sms/api', {
       params: { action:'send-sms', api_key:apiKey, to:formatted, from:'AMARYA', sms:message }
     });
     console.log(`✅ SMS sent to ${formatted}`);
-  } catch (e) {
-    console.error('SMS failed:', e.response?.data || e.message);
-  }
+  } catch (e) { console.error('SMS failed:', e.response?.data || e.message); }
 }
 
 // ─────────────────────────────────────────────────────────
@@ -162,10 +157,7 @@ async function getAmadeusToken() {
     amadeusToken = res.data.access_token;
     amadeusTokenExpiry = Date.now() + (res.data.expires_in - 60) * 1000;
     return amadeusToken;
-  } catch (e) {
-    console.error('❌ Amadeus auth failed:', e.response?.data || e.message);
-    return null;
-  }
+  } catch (e) { console.error('❌ Amadeus auth failed:', e.response?.data || e.message); return null; }
 }
 
 const CITY_TO_IATA = {
@@ -224,7 +216,7 @@ async function fetchAmadeusHotels(cityCode, checkIn, checkOut, adults = 1) {
       const amenityMap = { 'SWIMMING_POOL':'Private Pool','WIFI':'Free WiFi','PARKING':'Parking','RESTAURANT':'Restaurant','FITNESS_CENTER':'Gym','SPA':'Couples Spa','AIR_CONDITIONING':'AC','BAR':'Minibar','ROOM_SERVICE':'Room Service' };
       const amenities = (hotel.amenities || []).slice(0, 5).map(a => amenityMap[a] || a).join(',');
       return {
-        id:`amadeus_${hotel.hotelId}`, source:'amadeus', hotel_id:hotel.hotelId,
+        id:`amadeus_${hotel.hotelId}`, source:'amadeus',
         hotel_name:hotel.name, room_number:offer?.id || 'A1',
         type:offer?.room?.typeEstimated?.category || 'Standard Room',
         description:`${hotel.name} — ${offer?.room?.description?.text || 'Comfortable room.'}`,
@@ -237,10 +229,7 @@ async function fetchAmadeusHotels(cityCode, checkIn, checkOut, adults = 1) {
         check_in:ci, check_out:co, offer_id:offer?.id, amadeus_hotel_id:hotel.hotelId,
       };
     });
-  } catch (e) {
-    console.error('❌ Amadeus fetch failed:', e.response?.data || e.message);
-    return null;
-  }
+  } catch (e) { console.error('❌ Amadeus fetch failed:', e.response?.data || e.message); return null; }
 }
 
 const amadeusEnabled = !!(process.env.AMADEUS_CLIENT_ID && process.env.AMADEUS_CLIENT_SECRET);
@@ -251,19 +240,13 @@ const amadeusEnabled = !!(process.env.AMADEUS_CLIENT_ID && process.env.AMADEUS_C
 function authMiddleware(req, res, next) {
   const token = req.headers.authorization?.split(' ')[1];
   if (!token) return res.status(401).json({ error: 'No token provided' });
-  try {
-    req.user = jwt.verify(token, JWT_SECRET);
-    next();
-  } catch {
-    return res.status(401).json({ error: 'Invalid token' });
-  }
+  try { req.user = jwt.verify(token, JWT_SECRET); next(); }
+  catch { return res.status(401).json({ error: 'Invalid token' }); }
 }
 
 function optionalAuth(req, res, next) {
   const token = req.headers.authorization?.split(' ')[1];
-  if (token) {
-    try { req.user = jwt.verify(token, JWT_SECRET); } catch {}
-  }
+  if (token) { try { req.user = jwt.verify(token, JWT_SECRET); } catch {} }
   next();
 }
 
@@ -273,221 +256,175 @@ function optionalAuth(req, res, next) {
 
 app.post('/api/auth/register', async (req, res) => {
   const { name, email, phone, password } = req.body;
-  if (!name || !email || !password)
-    return res.status(400).json({ error: 'Name, email and password are required.' });
-  if (password.length < 6)
-    return res.status(400).json({ error: 'Password must be at least 6 characters.' });
-
-  db.query('SELECT id FROM users WHERE email = ?', [email], async (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
+  if (!name || !email || !password) return res.status(400).json({ error: 'Name, email and password are required.' });
+  if (password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters.' });
+  try {
+    const [rows] = await db.query('SELECT id FROM users WHERE email = ?', [email]);
     if (rows.length) return res.status(400).json({ error: 'Email already registered.' });
-
     const password_hash = await bcrypt.hash(password, 10);
-    db.query(
+    const [result] = await db.query(
       'INSERT INTO users (name, email, phone, password_hash) VALUES (?, ?, ?, ?)',
-      [name, email, phone || null, password_hash],
-      (err2, result) => {
-        if (err2) return res.status(500).json({ error: err2.message });
-        const token = jwt.sign({ id:result.insertId, name, email }, JWT_SECRET, { expiresIn:'30d' });
-        if (phone) sendSMS(phone, `Welcome to Amarya, ${name}! Your account is ready. - Amarya`);
-        res.json({ success:true, token, user:{ id:result.insertId, name, email, phone } });
-      }
+      [name, email, phone || null, password_hash]
     );
-  });
+    const token = jwt.sign({ id:result.insertId, name, email }, JWT_SECRET, { expiresIn:'30d' });
+    if (phone) sendSMS(phone, `Welcome to Amarya, ${name}! Your account is ready. - Amarya`);
+    res.json({ success:true, token, user:{ id:result.insertId, name, email, phone } });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) return res.status(400).json({ error: 'Email and password required.' });
-
-  db.query('SELECT * FROM users WHERE email = ?', [email], async (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
+  try {
+    const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
     if (!rows.length) return res.status(401).json({ error: 'Invalid email or password.' });
-
     const user = rows[0];
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) return res.status(401).json({ error: 'Invalid email or password.' });
-
     const token = jwt.sign({ id:user.id, name:user.name, email:user.email }, JWT_SECRET, { expiresIn:'30d' });
     res.json({ success:true, token, user:{ id:user.id, name:user.name, email:user.email, phone:user.phone } });
-  });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.get('/api/auth/me', authMiddleware, (req, res) => {
-  db.query('SELECT id, name, email, phone, created_at FROM users WHERE id = ?', [req.user.id], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
+app.get('/api/auth/me', authMiddleware, async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT id, name, email, phone, created_at FROM users WHERE id = ?', [req.user.id]);
     if (!rows.length) return res.status(404).json({ error: 'User not found' });
     res.json(rows[0]);
-  });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 app.put('/api/auth/me', authMiddleware, async (req, res) => {
   const { name, phone, password } = req.body;
-  let sql = 'UPDATE users SET name=?, phone=? WHERE id=?';
-  let params = [name, phone || null, req.user.id];
-  if (password && password.length >= 6) {
-    const hash = await bcrypt.hash(password, 10);
-    sql = 'UPDATE users SET name=?, phone=?, password_hash=? WHERE id=?';
-    params = [name, phone || null, hash, req.user.id];
-  }
-  db.query(sql, params, (err) => {
-    if (err) return res.status(500).json({ error: err.message });
+  try {
+    if (password && password.length >= 6) {
+      const hash = await bcrypt.hash(password, 10);
+      await db.query('UPDATE users SET name=?, phone=?, password_hash=? WHERE id=?', [name, phone||null, hash, req.user.id]);
+    } else {
+      await db.query('UPDATE users SET name=?, phone=? WHERE id=?', [name, phone||null, req.user.id]);
+    }
     res.json({ success: true });
-  });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.get('/api/auth/bookings', authMiddleware, (req, res) => {
-  const sql = `
-    SELECT b.*,
-      COALESCE(r.type,'External Room') AS type,
-      COALESCE(r.room_number,'EXT')    AS room_number,
-      COALESCE(r.image_url,'')         AS image_url,
-      COALESCE(h.name, b.external_ref) AS hotel_name,
-      COALESCE(h.city,'')              AS city,
-      COALESCE(h.country,'')           AS country
-    FROM bookings b
-    LEFT JOIN rooms r  ON b.room_id  = r.id
-    LEFT JOIN hotels h ON b.hotel_id = h.id
-    WHERE b.user_id = ?
-    ORDER BY b.created_at DESC
-  `;
-  db.query(sql, [req.user.id], (err, data) => {
-    if (err) return res.status(500).json({ error: err.message });
+app.get('/api/auth/bookings', authMiddleware, async (req, res) => {
+  try {
+    const [data] = await db.query(`
+      SELECT b.*,
+        COALESCE(r.type,'External Room') AS type,
+        COALESCE(r.room_number,'EXT')    AS room_number,
+        COALESCE(r.image_url,'')         AS image_url,
+        COALESCE(h.name, b.external_ref) AS hotel_name,
+        COALESCE(h.city,'')              AS city,
+        COALESCE(h.country,'')           AS country
+      FROM bookings b
+      LEFT JOIN rooms r  ON b.room_id  = r.id
+      LEFT JOIN hotels h ON b.hotel_id = h.id
+      WHERE b.user_id = ?
+      ORDER BY b.created_at DESC
+    `, [req.user.id]);
     res.json(data);
-  });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ─────────────────────────────────────────────────────────
 //  HOTELS
 // ─────────────────────────────────────────────────────────
 
-app.get('/api/hotels', (req, res) => {
+app.get('/api/hotels', async (req, res) => {
   const { q } = req.query;
-  let sql = `
-    SELECT h.*,
-      COALESCE(AVG(rv.rating), 0) AS avg_rating,
-      COUNT(rv.id) AS review_count
-    FROM hotels h
-    LEFT JOIN reviews rv ON rv.hotel_id = h.id
-    WHERE h.status = 'active'
-  `;
-  const params = [];
-  if (q) {
-    sql += " AND (h.city LIKE ? OR h.country LIKE ? OR h.name LIKE ?)";
-    const term = `%${q}%`;
-    params.push(term, term, term);
-  }
-  sql += " GROUP BY h.id ORDER BY avg_rating DESC, h.star_rating DESC";
-  db.query(sql, params, (err, data) => {
-    if (err) return res.status(500).json({ error: err.message });
+  try {
+    let sql = `
+      SELECT h.*, COALESCE(AVG(rv.rating), 0) AS avg_rating, COUNT(rv.id) AS review_count
+      FROM hotels h
+      LEFT JOIN reviews rv ON rv.hotel_id = h.id
+      WHERE h.status = 'active'
+    `;
+    const params = [];
+    if (q) {
+      sql += " AND (h.city LIKE ? OR h.country LIKE ? OR h.name LIKE ?)";
+      const term = `%${q}%`;
+      params.push(term, term, term);
+    }
+    sql += " GROUP BY h.id ORDER BY avg_rating DESC, h.star_rating DESC";
+    const [data] = await db.query(sql, params);
     res.json(data);
-  });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.get('/api/hotels/:id', (req, res) => {
-  db.query('SELECT * FROM hotels WHERE id = ?', [req.params.id], (err, hotels) => {
-    if (err) return res.status(500).json({ error: err.message });
+app.get('/api/hotels/:id', async (req, res) => {
+  try {
+    const [hotels] = await db.query('SELECT * FROM hotels WHERE id = ?', [req.params.id]);
     if (!hotels.length) return res.status(404).json({ error: 'Hotel not found' });
     const hotel = hotels[0];
-    db.query('SELECT * FROM rooms WHERE hotel_id = ? ORDER BY price ASC', [hotel.id], (err2, rooms) => {
-      if (err2) return res.status(500).json({ error: err2.message });
-      db.query(
-        'SELECT * FROM reviews WHERE hotel_id = ? ORDER BY created_at DESC LIMIT 20',
-        [hotel.id],
-        (err3, reviews) => {
-          if (err3) return res.status(500).json({ error: err3.message });
-          res.json({ ...hotel, rooms, reviews });
-        }
-      );
-    });
-  });
+    const [rooms]   = await db.query('SELECT * FROM rooms WHERE hotel_id = ? ORDER BY price ASC', [hotel.id]);
+    const [reviews] = await db.query('SELECT * FROM reviews WHERE hotel_id = ? ORDER BY created_at DESC LIMIT 20', [hotel.id]);
+    res.json({ ...hotel, rooms, reviews });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.post('/api/hotels/apply', (req, res) => {
+app.post('/api/hotels/apply', async (req, res) => {
   const { hotel_name, city, country, contact_name, email, phone, message } = req.body;
   if (!hotel_name || !city || !country || !contact_name || !email)
     return res.status(400).json({ error: 'Missing required fields.' });
-  db.query(
-    'INSERT INTO hotel_applications (hotel_name,city,country,contact_name,email,phone,message) VALUES (?,?,?,?,?,?,?)',
-    [hotel_name, city, country, contact_name, email, phone || null, message || null],
-    (err, result) => {
-      if (err) return res.status(500).json({ error: err.message });
-
-      // ── Notify admin about new partner application ──
-      const adminEmail = process.env.BREVO_USER || process.env.EMAIL_USER;
-      if (adminEmail) {
-        sendEmail(
-          adminEmail,
-          `New Partner Application — ${hotel_name}`,
-          `<div style="font-family:Arial,sans-serif;max-width:600px;">
-            <div style="background:#0a0e17;padding:30px;text-align:center;">
-              <h1 style="color:#c4a050;margin:0;">AMARYA</h1>
-            </div>
-            <div style="background:#f9f9f9;padding:30px;">
-              <h2>New Hotel Partner Application</h2>
-              <p><strong>Hotel:</strong> ${hotel_name}</p>
-              <p><strong>Location:</strong> ${city}, ${country}</p>
-              <p><strong>Contact:</strong> ${contact_name}</p>
-              <p><strong>Email:</strong> ${email}</p>
-              <p><strong>Phone:</strong> ${phone || 'N/A'}</p>
-              <p><strong>Message:</strong> ${message || 'N/A'}</p>
-            </div>
-          </div>`
-        );
-      }
-
-      res.json({ success:true, application_id:result.insertId });
+  try {
+    const [result] = await db.query(
+      'INSERT INTO hotel_applications (hotel_name,city,country,contact_name,email,phone,message) VALUES (?,?,?,?,?,?,?)',
+      [hotel_name, city, country, contact_name, email, phone||null, message||null]
+    );
+    if (SENDER_EMAIL) {
+      sendEmail(SENDER_EMAIL, `New Partner Application — ${hotel_name}`,
+        `<div style="font-family:Arial,sans-serif;max-width:600px;">
+          <div style="background:#0a0e17;padding:30px;text-align:center;"><h1 style="color:#c4a050;margin:0;">AMARYA</h1></div>
+          <div style="background:#f9f9f9;padding:30px;">
+            <h2>New Hotel Partner Application</h2>
+            <p><strong>Hotel:</strong> ${hotel_name}</p>
+            <p><strong>Location:</strong> ${city}, ${country}</p>
+            <p><strong>Contact:</strong> ${contact_name}</p>
+            <p><strong>Email:</strong> ${email}</p>
+            <p><strong>Phone:</strong> ${phone || 'N/A'}</p>
+            <p><strong>Message:</strong> ${message || 'N/A'}</p>
+          </div>
+        </div>`
+      );
     }
-  );
+    res.json({ success:true, application_id:result.insertId });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ─────────────────────────────────────────────────────────
-//  CONTACT FORM  ← NEW ROUTE (was missing before)
+//  CONTACT FORM
 // ─────────────────────────────────────────────────────────
-app.post('/api/contact', (req, res) => {
+app.post('/api/contact', async (req, res) => {
   const { name, email, subject, message } = req.body;
   if (!name || !email || !message)
     return res.status(400).json({ error: 'Name, email and message are required.' });
 
-  const adminEmail = process.env.BREVO_USER || process.env.EMAIL_USER;
+  console.log(`📬 Contact from ${name} <${email}>`);
 
-  console.log(`📬 Contact form from ${name} <${email}> — ${subject}`);
+  sendEmail(
+    SENDER_EMAIL || email,
+    `Contact: ${subject || 'New Message'} — from ${name}`,
+    `<div style="font-family:Arial,sans-serif;max-width:600px;">
+      <div style="background:#0a0e17;padding:30px;text-align:center;"><h1 style="color:#c4a050;letter-spacing:4px;margin:0;">AMARYA</h1></div>
+      <div style="background:#f9f9f9;padding:30px;">
+        <h2>New Contact Message 📬</h2>
+        <table style="width:100%;border-collapse:collapse;">
+          <tr style="background:#f5f5f5"><td style="padding:10px;color:#666;border:1px solid #eee;">Name</td><td style="padding:10px;font-weight:bold;border:1px solid #eee;">${name}</td></tr>
+          <tr><td style="padding:10px;color:#666;border:1px solid #eee;">Email</td><td style="padding:10px;font-weight:bold;border:1px solid #eee;">${email}</td></tr>
+          <tr style="background:#f5f5f5"><td style="padding:10px;color:#666;border:1px solid #eee;">Subject</td><td style="padding:10px;font-weight:bold;border:1px solid #eee;">${subject || 'N/A'}</td></tr>
+          <tr><td style="padding:10px;color:#666;border:1px solid #eee;">Message</td><td style="padding:10px;border:1px solid #eee;">${message}</td></tr>
+        </table>
+        <p style="margin-top:20px;">Reply to: <a href="mailto:${email}">${email}</a></p>
+      </div>
+    </div>`
+  );
 
-  if (adminEmail) {
-    sendEmail(
-      adminEmail,
-      `Contact Form: ${subject || 'New Message'} — from ${name}`,
-      `<div style="font-family:Arial,sans-serif;max-width:600px;">
-        <div style="background:#0a0e17;padding:30px;text-align:center;">
-          <h1 style="color:#c4a050;letter-spacing:4px;margin:0;">AMARYA</h1>
-        </div>
-        <div style="background:#f9f9f9;padding:30px;">
-          <h2 style="color:#333;">New Contact Message 📬</h2>
-          <table style="width:100%;border-collapse:collapse;">
-            <tr style="background:#f5f5f5"><td style="padding:10px;color:#666;border:1px solid #eee;">Name</td><td style="padding:10px;font-weight:bold;border:1px solid #eee;">${name}</td></tr>
-            <tr style="background:#fff"><td style="padding:10px;color:#666;border:1px solid #eee;">Email</td><td style="padding:10px;font-weight:bold;border:1px solid #eee;">${email}</td></tr>
-            <tr style="background:#f5f5f5"><td style="padding:10px;color:#666;border:1px solid #eee;">Subject</td><td style="padding:10px;font-weight:bold;border:1px solid #eee;">${subject || 'N/A'}</td></tr>
-            <tr style="background:#fff"><td style="padding:10px;color:#666;border:1px solid #eee;">Message</td><td style="padding:10px;border:1px solid #eee;">${message}</td></tr>
-          </table>
-          <p style="margin-top:20px;color:#666;">Reply directly to: <a href="mailto:${email}">${email}</a></p>
-        </div>
-        <div style="background:#0a0e17;padding:20px;text-align:center;">
-          <p style="color:#c4a050;margin:0;">amarya.netlify.app</p>
-        </div>
-      </div>`
-    );
-  } else {
-    console.log(`⚠️  No email credentials set. Contact from ${name}: ${message}`);
-  }
-
-  // Also send auto-reply to the person who contacted
   sendEmail(
     email,
     'We received your message — Amarya',
     `<div style="font-family:Arial,sans-serif;max-width:600px;">
-      <div style="background:#0a0e17;padding:30px;text-align:center;">
-        <h1 style="color:#c4a050;letter-spacing:4px;margin:0;">AMARYA</h1>
-      </div>
+      <div style="background:#0a0e17;padding:30px;text-align:center;"><h1 style="color:#c4a050;letter-spacing:4px;margin:0;">AMARYA</h1></div>
       <div style="background:#f9f9f9;padding:30px;">
         <h2>Hi ${name},</h2>
         <p>Thank you for getting in touch. We've received your message and will reply within 24 hours.</p>
@@ -504,54 +441,36 @@ app.post('/api/contact', (req, res) => {
 //  REVIEWS
 // ─────────────────────────────────────────────────────────
 
-app.get('/api/hotels/:id/reviews', (req, res) => {
-  db.query(
-    'SELECT * FROM reviews WHERE hotel_id = ? ORDER BY created_at DESC',
-    [req.params.id],
-    (err, data) => {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json(data);
-    }
-  );
+app.get('/api/hotels/:id/reviews', async (req, res) => {
+  try {
+    const [data] = await db.query('SELECT * FROM reviews WHERE hotel_id = ? ORDER BY created_at DESC', [req.params.id]);
+    res.json(data);
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.post('/api/hotels/:id/reviews', optionalAuth, (req, res) => {
+app.post('/api/hotels/:id/reviews', optionalAuth, async (req, res) => {
   const { guest_name, rating, comment, stay_date } = req.body;
-  const hotel_id = req.params.id;
-  const user_id = req.user?.id || null;
-
-  if (!guest_name || !rating)
-    return res.status(400).json({ error: 'Name and rating are required.' });
-  if (rating < 1 || rating > 5)
-    return res.status(400).json({ error: 'Rating must be between 1 and 5.' });
-
-  db.query(
-    'INSERT INTO reviews (hotel_id, user_id, guest_name, rating, comment, stay_date) VALUES (?,?,?,?,?,?)',
-    [hotel_id, user_id, guest_name, rating, comment || null, stay_date || null],
-    (err, result) => {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json({ success:true, review_id:result.insertId });
-    }
-  );
+  if (!guest_name || !rating) return res.status(400).json({ error: 'Name and rating are required.' });
+  if (rating < 1 || rating > 5) return res.status(400).json({ error: 'Rating must be between 1 and 5.' });
+  try {
+    const [result] = await db.query(
+      'INSERT INTO reviews (hotel_id, user_id, guest_name, rating, comment, stay_date) VALUES (?,?,?,?,?,?)',
+      [req.params.id, req.user?.id || null, guest_name, rating, comment||null, stay_date||null]
+    );
+    res.json({ success:true, review_id:result.insertId });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.get('/api/hotels/:id/rating', (req, res) => {
-  db.query(
-    `SELECT
-       COUNT(*) AS total,
-       ROUND(AVG(rating),1) AS average,
-       SUM(rating=5) AS five_star,
-       SUM(rating=4) AS four_star,
-       SUM(rating=3) AS three_star,
-       SUM(rating=2) AS two_star,
-       SUM(rating=1) AS one_star
-     FROM reviews WHERE hotel_id = ?`,
-    [req.params.id],
-    (err, data) => {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json(data[0]);
-    }
-  );
+app.get('/api/hotels/:id/rating', async (req, res) => {
+  try {
+    const [data] = await db.query(`
+      SELECT COUNT(*) AS total, ROUND(AVG(rating),1) AS average,
+        SUM(rating=5) AS five_star, SUM(rating=4) AS four_star,
+        SUM(rating=3) AS three_star, SUM(rating=2) AS two_star, SUM(rating=1) AS one_star
+      FROM reviews WHERE hotel_id = ?
+    `, [req.params.id]);
+    res.json(data[0]);
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ─────────────────────────────────────────────────────────
@@ -560,34 +479,29 @@ app.get('/api/hotels/:id/rating', (req, res) => {
 
 app.get('/api/rooms', async (req, res) => {
   const { q, check_in, check_out, guests } = req.query;
-
-  let sql = `
-    SELECT r.*, h.name AS hotel_name, h.city, h.country, h.star_rating,
-           h.address, h.phone AS hotel_phone, h.email AS hotel_email,
-           h.latitude, h.longitude,
-           COALESCE(AVG(rv.rating),0) AS avg_rating,
-           COUNT(rv.id) AS review_count
-    FROM rooms r
-    JOIN hotels h ON r.hotel_id = h.id
-    LEFT JOIN reviews rv ON rv.hotel_id = h.id
-    WHERE h.status = 'active' AND r.status = 'available'
-  `;
-  const params = [];
-  if (q) {
-    sql += " AND (h.city LIKE ? OR h.country LIKE ? OR h.name LIKE ? OR r.type LIKE ?)";
-    const cleanQ = q.split(',')[0].trim();
-    const term = `%${cleanQ}%`;
-    params.push(term, term, term, term);
-  }
-  sql += " GROUP BY r.id ORDER BY h.star_rating DESC, r.price ASC";
-
-  db.query(sql, params, async (err, dbRooms) => {
-    if (err) return res.status(500).json({ error: err.message });
-
+  try {
+    let sql = `
+      SELECT r.*, h.name AS hotel_name, h.city, h.country, h.star_rating,
+             h.address, h.phone AS hotel_phone, h.email AS hotel_email,
+             h.latitude, h.longitude,
+             COALESCE(AVG(rv.rating),0) AS avg_rating, COUNT(rv.id) AS review_count
+      FROM rooms r
+      JOIN hotels h ON r.hotel_id = h.id
+      LEFT JOIN reviews rv ON rv.hotel_id = h.id
+      WHERE h.status = 'active' AND r.status = 'available'
+    `;
+    const params = [];
+    if (q) {
+      sql += " AND (h.city LIKE ? OR h.country LIKE ? OR h.name LIKE ? OR r.type LIKE ?)";
+      const term = `%${q.split(',')[0].trim()}%`;
+      params.push(term, term, term, term);
+    }
+    sql += " GROUP BY r.id ORDER BY h.star_rating DESC, r.price ASC";
+    const [dbRooms] = await db.query(sql, params);
     const localRooms = dbRooms.map(r => ({ ...r, source:'local' }));
-    let amadeusRooms = [];
 
-    const hotelWords = ['hotel','resort','lodge','inn','palace','suites','golden','royal','grand','plaza','tulip','marriott','movenpick','alisa','miklin','kempinski','labadi','busua','elmina','zaina','erata','senchi','alliance','kingstel','raybow','lancaster','mensvic'];
+    let amadeusRooms = [];
+    const hotelWords = ['hotel','resort','lodge','inn','palace','suites','golden','royal','grand','plaza','movenpick','alisa','miklin','kempinski','labadi','busua','elmina','zaina','erata','senchi','alliance','kingstel','raybow','lancaster','mensvic'];
     const looksLikeHotelName = q ? hotelWords.some(w => q.toLowerCase().includes(w)) : false;
 
     if (amadeusEnabled && q && !looksLikeHotelName) {
@@ -599,37 +513,36 @@ app.get('/api/rooms', async (req, res) => {
     }
 
     res.json([...localRooms, ...amadeusRooms]);
-  });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ─────────────────────────────────────────────────────────
 //  MAP
 // ─────────────────────────────────────────────────────────
 
-app.get('/api/map/hotels', (req, res) => {
+app.get('/api/map/hotels', async (req, res) => {
   const { q } = req.query;
-  let sql = `
-    SELECT h.id, h.name, h.city, h.country, h.star_rating, h.image_url,
-           h.latitude, h.longitude, h.address,
-           COALESCE(AVG(rv.rating),0) AS avg_rating,
-           COUNT(rv.id) AS review_count,
-           MIN(r.price) AS min_price
-    FROM hotels h
-    LEFT JOIN reviews rv ON rv.hotel_id = h.id
-    LEFT JOIN rooms r ON r.hotel_id = h.id AND r.status = 'available'
-    WHERE h.status = 'active' AND h.latitude IS NOT NULL
-  `;
-  const params = [];
-  if (q) {
-    sql += " AND (h.city LIKE ? OR h.country LIKE ? OR h.name LIKE ?)";
-    const term = `%${q.split(',')[0].trim()}%`;
-    params.push(term, term, term);
-  }
-  sql += " GROUP BY h.id ORDER BY avg_rating DESC";
-  db.query(sql, params, (err, data) => {
-    if (err) return res.status(500).json({ error: err.message });
+  try {
+    let sql = `
+      SELECT h.id, h.name, h.city, h.country, h.star_rating, h.image_url,
+             h.latitude, h.longitude, h.address,
+             COALESCE(AVG(rv.rating),0) AS avg_rating, COUNT(rv.id) AS review_count,
+             MIN(r.price) AS min_price
+      FROM hotels h
+      LEFT JOIN reviews rv ON rv.hotel_id = h.id
+      LEFT JOIN rooms r ON r.hotel_id = h.id AND r.status = 'available'
+      WHERE h.status = 'active' AND h.latitude IS NOT NULL
+    `;
+    const params = [];
+    if (q) {
+      sql += " AND (h.city LIKE ? OR h.country LIKE ? OR h.name LIKE ?)";
+      const term = `%${q.split(',')[0].trim()}%`;
+      params.push(term, term, term);
+    }
+    sql += " GROUP BY h.id ORDER BY avg_rating DESC";
+    const [data] = await db.query(sql, params);
     res.json(data);
-  });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ─────────────────────────────────────────────────────────
@@ -640,8 +553,7 @@ app.post('/api/bookings', optionalAuth, async (req, res) => {
   const {
     room_id, customer_name, customer_email, customer_phone,
     check_in, check_out, guests, special_requests,
-    source, offer_id, amadeus_hotel_id, hotel_name: ext_hotel_name,
-    room_type, price_usd, city, country
+    source, offer_id, hotel_name: ext_hotel_name, price_usd,
   } = req.body;
 
   if (!customer_name || !customer_email || !check_in || !check_out)
@@ -655,35 +567,28 @@ app.post('/api/bookings', optionalAuth, async (req, res) => {
   // ── AMADEUS BOOKING ──────────────────────────────────
   if (source === 'amadeus' && offer_id) {
     const priceGHS = Math.round((price_usd || 0) * 15 * nights);
-    db.query(
-      `INSERT INTO bookings (room_id,hotel_id,user_id,customer_name,customer_email,customer_phone,check_in,check_out,nights,guests,total_price,commission_amount,hotel_payout,special_requests,status,hotel_notified,external_ref)
-       VALUES (NULL,NULL,?,?,?,?,?,?,?,?,?,0,?,?,'confirmed',1,?)`,
-      [user_id, customer_name, customer_email, customer_phone || null, check_in, check_out, nights, guests || 1, priceGHS, priceGHS, special_requests || null, 'AMADEUS-' + Date.now()],
-      (err2) => { if (err2) console.error('DB insert error:', err2.message); }
-    );
-
-    if (customer_phone) {
-      sendSMS(customer_phone, `Hi ${customer_name}! Your booking at ${ext_hotel_name} is confirmed. Check-in: ${check_in}. Check-out: ${check_out}. - Amarya`);
-    }
-
-    return res.json({
-      success:true, booking_id:'AMADEUS-' + Date.now(),
-      total_price:priceGHS, nights, hotel_name:ext_hotel_name || 'External Hotel',
-      source:'amadeus', hotel_payout:priceGHS, commission_amount:0
-    });
+    try {
+      await db.query(
+        `INSERT INTO bookings (room_id,hotel_id,user_id,customer_name,customer_email,customer_phone,check_in,check_out,nights,guests,total_price,commission_amount,hotel_payout,special_requests,status,hotel_notified,external_ref)
+         VALUES (NULL,NULL,?,?,?,?,?,?,?,?,?,0,?,?,'confirmed',1,?)`,
+        [user_id, customer_name, customer_email, customer_phone||null, check_in, check_out, nights, guests||1, priceGHS, priceGHS, special_requests||null, 'AMADEUS-'+Date.now()]
+      );
+    } catch (e) { console.error('DB insert error:', e.message); }
+    if (customer_phone) sendSMS(customer_phone, `Hi ${customer_name}! Booking at ${ext_hotel_name} confirmed. Check-in: ${check_in}. - Amarya`);
+    return res.json({ success:true, booking_id:'AMADEUS-'+Date.now(), total_price:priceGHS, nights, hotel_name:ext_hotel_name||'External Hotel', source:'amadeus', hotel_payout:priceGHS, commission_amount:0 });
   }
 
   // ── LOCAL BOOKING ────────────────────────────────────
   if (!room_id) return res.status(400).json({ error: 'Missing room_id.' });
 
-  const roomSql = `
-    SELECT r.*, h.name AS hotel_name, h.email AS hotel_email,
-           h.commission, h.city, h.country, h.phone AS hotel_phone
-    FROM rooms r JOIN hotels h ON r.hotel_id = h.id
-    WHERE r.id = ? AND r.status = 'available'
-  `;
-  db.query(roomSql, [room_id], async (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
+  try {
+    const [rows] = await db.query(`
+      SELECT r.*, h.name AS hotel_name, h.email AS hotel_email,
+             h.commission, h.city, h.country, h.phone AS hotel_phone
+      FROM rooms r JOIN hotels h ON r.hotel_id = h.id
+      WHERE r.id = ? AND r.status = 'available'
+    `, [room_id]);
+
     if (!rows.length) return res.status(400).json({ error: 'Room not available.' });
 
     const room = rows[0];
@@ -691,131 +596,91 @@ app.post('/api/bookings', optionalAuth, async (req, res) => {
     const commission_amount = parseFloat((total_price * room.commission / 100).toFixed(2));
     const hotel_payout      = parseFloat((total_price - commission_amount).toFixed(2));
 
-    db.query(
+    const [result] = await db.query(
       `INSERT INTO bookings (room_id,hotel_id,user_id,customer_name,customer_email,customer_phone,check_in,check_out,nights,guests,total_price,commission_amount,hotel_payout,special_requests,status,hotel_notified)
        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,'confirmed',0)`,
-      [room_id, room.hotel_id, user_id, customer_name, customer_email, customer_phone || null, check_in, check_out, nights, guests || 1, total_price, commission_amount, hotel_payout, special_requests || null],
-      async (err2, result) => {
-        if (err2) return res.status(500).json({ error: err2.message });
-
-        db.query("UPDATE rooms SET status='occupied' WHERE id=?", [room_id]);
-
-        const bookingRecord = {
-          id: result.insertId, customer_name, customer_email, customer_phone,
-          check_in, check_out, nights, guests: guests || 1,
-          special_requests, hotel_payout, commission_amount
-        };
-
-        // Respond immediately — don't block on email
-        res.json({
-          success:true, booking_id:result.insertId,
-          total_price, nights, hotel_name:room.hotel_name,
-          hotel_payout, commission_amount, source:'local'
-        });
-
-        // ── All notifications run in background ──────
-        const bookingNum = result.insertId;
-
-        // 1. Email hotel
-        notifyHotel(
-          { email:room.hotel_email, commission:room.commission, hotel_name:room.hotel_name },
-          bookingRecord,
-          room
-        ).then(() => db.query("UPDATE bookings SET hotel_notified=1 WHERE id=?", [bookingNum]))
-         .catch(e => console.error('Hotel email error:', e.message));
-
-        // 2. Guest confirmation email
-        sendEmail(
-          customer_email,
-          `Booking Confirmed #${bookingNum} — ${room.hotel_name}`,
-          `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
-            <div style="background:#0a0e17;padding:30px;text-align:center;">
-              <h1 style="color:#c4a050;letter-spacing:4px;margin:0;">AMARYA</h1>
-            </div>
-            <div style="background:#f9f9f9;padding:30px;">
-              <h2 style="color:#333;">Booking Confirmed ✓</h2>
-              <p>Dear <strong>${customer_name}</strong>, your reservation is confirmed.</p>
-              <table style="width:100%;border-collapse:collapse;margin:20px 0;">
-                ${[
-                  ['Booking #', bookingNum],
-                  ['Hotel', room.hotel_name],
-                  ['Room', `${room.type} — #${room.room_number}`],
-                  ['Check In', check_in],
-                  ['Check Out', check_out],
-                  ['Nights', nights],
-                  ['Guests', guests || 1],
-                  ['Total', `GHS ${total_price.toLocaleString()}`],
-                ].map(([l, v], i) =>
-                  `<tr style="background:${i % 2 ? '#fff' : '#f5f5f5'}">
-                    <td style="padding:10px;color:#666;border:1px solid #eee;">${l}</td>
-                    <td style="padding:10px;font-weight:bold;border:1px solid #eee;">${v}</td>
-                  </tr>`
-                ).join('')}
-              </table>
-              <p style="color:#666;">Thank you for choosing Amarya. We look forward to welcoming you.</p>
-            </div>
-            <div style="background:#0a0e17;padding:20px;text-align:center;">
-              <p style="color:#c4a050;margin:0;">amarya.netlify.app</p>
-            </div>
-          </div>`
-        ).catch(e => console.error('Guest email error:', e.message));
-
-        // 3. SMS to guest
-        if (customer_phone) {
-          sendSMS(customer_phone,
-            `Hi ${customer_name}! Booking #${bookingNum} confirmed at ${room.hotel_name}. Room: ${room.type}. Check-in: ${check_in}. Check-out: ${check_out}. Total: GHS ${total_price.toLocaleString()}. - Amarya`
-          ).catch(e => console.error('Guest SMS error:', e.message));
-        }
-
-        // 4. SMS to hotel
-        if (room.hotel_phone) {
-          sendSMS(room.hotel_phone,
-            `New Amarya booking! Guest: ${customer_name}. Room: ${room.type} #${room.room_number}. Check-in: ${check_in}. Payout: GHS ${hotel_payout.toLocaleString()}.`
-          ).catch(e => console.error('Hotel SMS error:', e.message));
-        }
-      }
+      [room_id, room.hotel_id, user_id, customer_name, customer_email, customer_phone||null, check_in, check_out, nights, guests||1, total_price, commission_amount, hotel_payout, special_requests||null]
     );
-  });
+
+    await db.query("UPDATE rooms SET status='occupied' WHERE id=?", [room_id]);
+
+    // Respond immediately
+    res.json({ success:true, booking_id:result.insertId, total_price, nights, hotel_name:room.hotel_name, hotel_payout, commission_amount, source:'local' });
+
+    const bookingNum = result.insertId;
+    const bookingRecord = { id:bookingNum, customer_name, customer_email, customer_phone, check_in, check_out, nights, guests:guests||1, special_requests, hotel_payout, commission_amount };
+
+    // All notifications in background
+    notifyHotel({ email:room.hotel_email, hotel_name:room.hotel_name }, bookingRecord, room)
+      .then(() => db.query("UPDATE bookings SET hotel_notified=1 WHERE id=?", [bookingNum]))
+      .catch(e => console.error('Hotel email error:', e.message));
+
+    sendEmail(
+      customer_email,
+      `Booking Confirmed #${bookingNum} — ${room.hotel_name}`,
+      `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+        <div style="background:#0a0e17;padding:30px;text-align:center;"><h1 style="color:#c4a050;letter-spacing:4px;margin:0;">AMARYA</h1></div>
+        <div style="background:#f9f9f9;padding:30px;">
+          <h2 style="color:#333;">Booking Confirmed ✓</h2>
+          <p>Dear <strong>${customer_name}</strong>, your reservation is confirmed.</p>
+          <table style="width:100%;border-collapse:collapse;margin:20px 0;">
+            ${[['Booking #',bookingNum],['Hotel',room.hotel_name],['Room',`${room.type} — #${room.room_number}`],['Check In',check_in],['Check Out',check_out],['Nights',nights],['Guests',guests||1],['Total',`GHS ${total_price.toLocaleString()}`]]
+              .map(([l,v],i)=>`<tr style="background:${i%2?'#fff':'#f5f5f5'}"><td style="padding:10px;color:#666;border:1px solid #eee;">${l}</td><td style="padding:10px;font-weight:bold;border:1px solid #eee;">${v}</td></tr>`).join('')}
+          </table>
+          <p style="color:#666;">Thank you for choosing Amarya.</p>
+        </div>
+        <div style="background:#0a0e17;padding:20px;text-align:center;"><p style="color:#c4a050;margin:0;">amarya.netlify.app</p></div>
+      </div>`
+    ).catch(e => console.error('Guest email error:', e.message));
+
+    if (customer_phone) {
+      sendSMS(customer_phone, `Hi ${customer_name}! Booking #${bookingNum} confirmed at ${room.hotel_name}. Room: ${room.type}. Check-in: ${check_in}. Total: GHS ${total_price.toLocaleString()}. - Amarya`)
+        .catch(e => console.error('Guest SMS error:', e.message));
+    }
+    if (room.hotel_phone) {
+      sendSMS(room.hotel_phone, `New Amarya booking! Guest: ${customer_name}. Room: ${room.type} #${room.room_number}. Check-in: ${check_in}. Payout: GHS ${hotel_payout.toLocaleString()}.`)
+        .catch(e => console.error('Hotel SMS error:', e.message));
+    }
+
+  } catch (err) {
+    if (!res.headersSent) res.status(500).json({ error: err.message });
+  }
 });
 
-app.get('/api/bookings', (req, res) => {
-  const sql = `
-    SELECT b.*,
-      COALESCE(r.type,'External Room') AS type,
-      COALESCE(r.room_number,'EXT')    AS room_number,
-      COALESCE(r.image_url,'')         AS image_url,
-      COALESCE(h.name,b.external_ref)  AS hotel_name,
-      COALESCE(h.city,'')              AS city,
-      COALESCE(h.country,'')           AS country
-    FROM bookings b
-    LEFT JOIN rooms r  ON b.room_id  = r.id
-    LEFT JOIN hotels h ON b.hotel_id = h.id
-    ORDER BY b.created_at DESC
-  `;
-  db.query(sql, (err, data) => {
-    if (err) return res.status(500).json({ error: err.message });
+app.get('/api/bookings', async (req, res) => {
+  try {
+    const [data] = await db.query(`
+      SELECT b.*,
+        COALESCE(r.type,'External Room') AS type,
+        COALESCE(r.room_number,'EXT')    AS room_number,
+        COALESCE(r.image_url,'')         AS image_url,
+        COALESCE(h.name,b.external_ref)  AS hotel_name,
+        COALESCE(h.city,'')              AS city,
+        COALESCE(h.country,'')           AS country
+      FROM bookings b
+      LEFT JOIN rooms r  ON b.room_id  = r.id
+      LEFT JOIN hotels h ON b.hotel_id = h.id
+      ORDER BY b.created_at DESC
+    `);
     res.json(data);
-  });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.delete('/api/bookings/:id', (req, res) => {
-  db.query('SELECT room_id FROM bookings WHERE id=?', [req.params.id], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
+app.delete('/api/bookings/:id', async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT room_id FROM bookings WHERE id=?', [req.params.id]);
     if (!rows.length) return res.status(404).json({ error: 'Booking not found' });
-    db.query('DELETE FROM bookings WHERE id=?', [req.params.id], (err2) => {
-      if (err2) return res.status(500).json({ error: err2.message });
-      if (rows[0].room_id)
-        db.query("UPDATE rooms SET status='available' WHERE id=?", [rows[0].room_id]);
-      res.json({ success:true });
-    });
-  });
+    await db.query('DELETE FROM bookings WHERE id=?', [req.params.id]);
+    if (rows[0].room_id) await db.query("UPDATE rooms SET status='available' WHERE id=?", [rows[0].room_id]);
+    res.json({ success:true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.get('/api/applications', (req, res) => {
-  db.query('SELECT * FROM hotel_applications ORDER BY created_at DESC', (err, data) => {
-    if (err) return res.status(500).json({ error: err.message });
+app.get('/api/applications', async (req, res) => {
+  try {
+    const [data] = await db.query('SELECT * FROM hotel_applications ORDER BY created_at DESC');
     res.json(data);
-  });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ─────────────────────────────────────────────────────────
@@ -824,13 +689,12 @@ app.get('/api/applications', (req, res) => {
 app.get('/api/status', (req, res) => {
   res.json({
     server:  'online',
-    email:   emailEnabled ? 'enabled (Brevo)' : 'disabled — set BREVO_USER + BREVO_PASS',
+    email:   emailEnabled ? 'enabled (Brevo HTTP API)' : 'disabled — set BREVO_API_KEY + SENDER_EMAIL',
     amadeus: amadeusEnabled ? 'enabled' : 'disabled',
     sms:     process.env.ARKESEL_API_KEY ? 'enabled' : 'simulated',
   });
 });
 
-// Keep-alive ping
 setInterval(() => {
   const http = require('http');
   http.get('http://localhost:5000/api/status', () => {
@@ -841,7 +705,7 @@ setInterval(() => {
 const PORT = 5000;
 app.listen(PORT, () => {
   console.log(`\n🚀 Amarya → http://localhost:${PORT}`);
-  console.log(`📧 Email:   ${emailEnabled ? 'ENABLED (Brevo SMTP)' : 'DISABLED — set BREVO_USER and BREVO_PASS'}`);
+  console.log(`📧 Email:   ${emailEnabled ? 'ENABLED (Brevo HTTP API)' : 'DISABLED — set BREVO_API_KEY and SENDER_EMAIL'}`);
   console.log(`📱 SMS:     ${process.env.ARKESEL_API_KEY ? 'ENABLED' : 'SIMULATED'}`);
   console.log(`🌍 Amadeus: ${amadeusEnabled ? 'ENABLED' : 'DISABLED'}\n`);
 });
