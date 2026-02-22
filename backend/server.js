@@ -29,9 +29,8 @@ db.connect((err) => {
 });
 
 // ─────────────────────────────────────────────────────────
-//  EMAIL
+//  EMAIL  — Brevo SMTP
 // ─────────────────────────────────────────────────────────
-// Brevo SMTP works on Railway (Gmail blocks outgoing SMTP)
 const transporter = nodemailer.createTransport({
   host: 'smtp-relay.brevo.com',
   port: 587,
@@ -41,26 +40,86 @@ const transporter = nodemailer.createTransport({
     pass: process.env.BREVO_PASS || process.env.EMAIL_PASS || ''
   }
 });
-const emailEnabled = !!(process.env.BREVO_USER || process.env.EMAIL_USER);
+
+const emailEnabled = !!(
+  (process.env.BREVO_USER || process.env.EMAIL_USER) &&
+  (process.env.BREVO_PASS || process.env.EMAIL_PASS)
+);
+
+console.log(`📧 Email: ${emailEnabled ? 'ENABLED (Brevo SMTP)' : 'DISABLED — set BREVO_USER and BREVO_PASS'}`);
 
 async function sendEmail(to, subject, html) {
-  if (!emailEnabled) { console.log(`📧 [SIM] To: ${to} | ${subject}`); return; }
+  if (!emailEnabled) {
+    console.log(`📧 [SIM — no credentials] To: ${to} | ${subject}`);
+    return;
+  }
   try {
-    await transporter.sendMail({ from: `"Amarya" <${process.env.EMAIL_USER}>`, to, subject, html });
-    console.log(`✅ Email sent to ${to}`);
-  } catch (e) { console.error('Email failed:', e.message); }
+    const info = await transporter.sendMail({
+      from: `"Amarya Hotels" <${process.env.BREVO_USER || process.env.EMAIL_USER}>`,
+      to,
+      subject,
+      html
+    });
+    console.log(`✅ Email sent to ${to} — ID: ${info.messageId}`);
+  } catch (e) {
+    console.error(`❌ Email failed to ${to}:`, e.message);
+  }
 }
 
 async function notifyHotel(hotel, booking, room) {
-  const html = `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;"><div style="background:#0a0e17;padding:30px;text-align:center;"><h1 style="color:#c4a050;letter-spacing:4px;margin:0;">AMARYA</h1></div><div style="background:#f9f9f9;padding:30px;"><h2>New Booking Received</h2><table style="width:100%;border-collapse:collapse;">${[['Booking ID','#'+booking.id],['Guest',booking.customer_name],['Email',booking.customer_email],['Phone',booking.customer_phone||'N/A'],['Room',room.type+' — Room '+room.room_number],['Check In',booking.check_in],['Check Out',booking.check_out],['Nights',booking.nights],['Guests',booking.guests],['Special Requests',booking.special_requests||'None']].map(([l,v],i)=>'<tr style="background:'+(i%2?'#fff':'transparent')+'"><td style="padding:8px;color:#666;">'+l+'</td><td style="padding:8px;font-weight:bold;">'+v+'</td></tr>').join('')}<tr style="background:#c4a050;"><td style="padding:10px;color:#000;font-weight:bold;">Payout</td><td style="padding:10px;color:#000;font-weight:bold;">GHS '+Number(booking.hotel_payout).toLocaleString()+'</td></tr></table></div></div>`;
-  await sendEmail(hotel.email, 'New Booking #'+booking.id+' — '+room.type, html);
-  await sendEmail(process.env.EMAIL_USER, '[ADMIN] Booking #'+booking.id+' — '+room.hotel_name, html);
+  const rows = [
+    ['Booking ID',       '#' + booking.id],
+    ['Guest',            booking.customer_name],
+    ['Email',            booking.customer_email],
+    ['Phone',            booking.customer_phone || 'N/A'],
+    ['Room',             room.type + ' — Room ' + room.room_number],
+    ['Check In',         booking.check_in],
+    ['Check Out',        booking.check_out],
+    ['Nights',           booking.nights],
+    ['Guests',           booking.guests],
+    ['Special Requests', booking.special_requests || 'None'],
+  ].map(([l, v], i) =>
+    `<tr style="background:${i % 2 ? '#fff' : '#f5f5f5'}">
+      <td style="padding:10px;color:#666;border:1px solid #eee;">${l}</td>
+      <td style="padding:10px;font-weight:bold;border:1px solid #eee;">${v}</td>
+    </tr>`
+  ).join('');
+
+  const html = `
+    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+      <div style="background:#0a0e17;padding:30px;text-align:center;">
+        <h1 style="color:#c4a050;letter-spacing:4px;margin:0;">AMARYA</h1>
+      </div>
+      <div style="background:#f9f9f9;padding:30px;">
+        <h2 style="color:#333;">New Booking Received 🎉</h2>
+        <table style="width:100%;border-collapse:collapse;">${rows}
+          <tr style="background:#c4a050;">
+            <td style="padding:10px;color:#000;font-weight:bold;">Payout</td>
+            <td style="padding:10px;color:#000;font-weight:bold;">GHS ${Number(booking.hotel_payout).toLocaleString()}</td>
+          </tr>
+        </table>
+      </div>
+      <div style="background:#0a0e17;padding:20px;text-align:center;">
+        <p style="color:#c4a050;margin:0;">amarya.netlify.app</p>
+      </div>
+    </div>`;
+
+  // Notify hotel
+  if (hotel.email) {
+    await sendEmail(hotel.email, `New Booking #${booking.id} — ${room.type}`, html);
+  }
+  // Notify admin
+  if (process.env.BREVO_USER || process.env.EMAIL_USER) {
+    await sendEmail(
+      process.env.BREVO_USER || process.env.EMAIL_USER,
+      `[ADMIN] Booking #${booking.id} — ${room.hotel_name}`,
+      html
+    );
+  }
 }
 
 // ─────────────────────────────────────────────────────────
-//  SMS — Arkesel (Ghana SMS API)
-//  Sign up free: https://arkesel.com
-//  Set env: ARKESEL_API_KEY
+//  SMS — Arkesel
 // ─────────────────────────────────────────────────────────
 async function sendSMS(phone, message) {
   const apiKey = process.env.ARKESEL_API_KEY;
@@ -68,20 +127,13 @@ async function sendSMS(phone, message) {
     console.log(`📱 [SMS SIM] To: ${phone} | ${message}`);
     return;
   }
-  // Format phone: ensure it starts with 233 (Ghana code)
   let formatted = phone.replace(/\D/g, '');
   if (formatted.startsWith('0')) formatted = '233' + formatted.slice(1);
   if (!formatted.startsWith('233')) formatted = '233' + formatted;
 
   try {
     await axios.get('https://sms.arkesel.com/sms/api', {
-      params: {
-        action:   'send-sms',
-        api_key:  apiKey,
-        to:       formatted,
-        from:     'AMARYA',
-        sms:      message,
-      }
+      params: { action:'send-sms', api_key:apiKey, to:formatted, from:'AMARYA', sms:message }
     });
     console.log(`✅ SMS sent to ${formatted}`);
   } catch (e) {
@@ -109,7 +161,6 @@ async function getAmadeusToken() {
     );
     amadeusToken = res.data.access_token;
     amadeusTokenExpiry = Date.now() + (res.data.expires_in - 60) * 1000;
-    console.log('✅ Amadeus token refreshed');
     return amadeusToken;
   } catch (e) {
     console.error('❌ Amadeus auth failed:', e.response?.data || e.message);
@@ -146,7 +197,7 @@ const HOTEL_IMAGES = [
   '1542314831-068cd1dbfeeb','1540518614846-7eded433c457',
 ];
 
-async function fetchAmadeusHotels(cityCode, checkIn, checkOut, adults=1) {
+async function fetchAmadeusHotels(cityCode, checkIn, checkOut, adults = 1) {
   const token = await getAmadeusToken();
   if (!token) return null;
   try {
@@ -156,10 +207,10 @@ async function fetchAmadeusHotels(cityCode, checkIn, checkOut, adults=1) {
     });
     const hotels = listRes.data.data;
     if (!hotels || hotels.length === 0) return [];
-    const hotelIds = hotels.slice(0,20).map(h => h.hotelId);
+    const hotelIds = hotels.slice(0, 20).map(h => h.hotelId);
     const today = new Date();
-    const ci = checkIn  || new Date(today.getTime()+86400000).toISOString().split('T')[0];
-    const co = checkOut || new Date(today.getTime()+2*86400000).toISOString().split('T')[0];
+    const ci = checkIn  || new Date(today.getTime() + 86400000).toISOString().split('T')[0];
+    const co = checkOut || new Date(today.getTime() + 2 * 86400000).toISOString().split('T')[0];
     const offersRes = await axios.get(`${AMADEUS_BASE}/v3/shopping/hotel-offers`, {
       headers: { Authorization:`Bearer ${token}` },
       params: { hotelIds:hotelIds.join(','), checkInDate:ci, checkOutDate:co, adults, roomQuantity:1, currency:'USD', bestRateOnly:true }
@@ -170,25 +221,24 @@ async function fetchAmadeusHotels(cityCode, checkIn, checkOut, adults=1) {
       const offer = item.offers?.[0];
       const priceUSD = parseFloat(offer?.price?.total || 0);
       const priceGHS = Math.round(priceUSD * 15);
-      const rawAmenities = hotel.amenities || [];
       const amenityMap = { 'SWIMMING_POOL':'Private Pool','WIFI':'Free WiFi','PARKING':'Parking','RESTAURANT':'Restaurant','FITNESS_CENTER':'Gym','SPA':'Couples Spa','AIR_CONDITIONING':'AC','BAR':'Minibar','ROOM_SERVICE':'Room Service' };
-      const amenities = rawAmenities.slice(0,5).map(a => amenityMap[a]||a).join(',');
+      const amenities = (hotel.amenities || []).slice(0, 5).map(a => amenityMap[a] || a).join(',');
       return {
         id:`amadeus_${hotel.hotelId}`, source:'amadeus', hotel_id:hotel.hotelId,
-        hotel_name:hotel.name, room_number:offer?.id||'A1',
-        type:offer?.room?.typeEstimated?.category||'Standard Room',
-        description:`${hotel.name} — ${offer?.room?.description?.text||'Comfortable room.'}`,
+        hotel_name:hotel.name, room_number:offer?.id || 'A1',
+        type:offer?.room?.typeEstimated?.category || 'Standard Room',
+        description:`${hotel.name} — ${offer?.room?.description?.text || 'Comfortable room.'}`,
         price:priceGHS, price_usd:priceUSD, currency:'GHS', status:'available',
-        capacity:parseInt(offer?.guests?.adults)||2, amenities:amenities||'Free WiFi,Smart TV',
-        image_url:`https://images.unsplash.com/photo-${HOTEL_IMAGES[Math.abs(hotel.hotelId.charCodeAt(0))%HOTEL_IMAGES.length]}?w=600`,
-        city:hotel.address?.cityName||'', country:hotel.address?.countryCode||'',
+        capacity:parseInt(offer?.guests?.adults) || 2, amenities:amenities || 'Free WiFi,Smart TV',
+        image_url:`https://images.unsplash.com/photo-${HOTEL_IMAGES[Math.abs(hotel.hotelId.charCodeAt(0)) % HOTEL_IMAGES.length]}?w=600`,
+        city:hotel.address?.cityName || '', country:hotel.address?.countryCode || '',
         latitude:hotel.geoCode?.latitude, longitude:hotel.geoCode?.longitude,
-        star_rating:hotel.rating?parseInt(hotel.rating):4,
+        star_rating:hotel.rating ? parseInt(hotel.rating) : 4,
         check_in:ci, check_out:co, offer_id:offer?.id, amadeus_hotel_id:hotel.hotelId,
       };
     });
   } catch (e) {
-    console.error('❌ Amadeus fetch failed:', e.response?.data||e.message);
+    console.error('❌ Amadeus fetch failed:', e.response?.data || e.message);
     return null;
   }
 }
@@ -221,7 +271,6 @@ function optionalAuth(req, res, next) {
 //  USER ACCOUNTS
 // ─────────────────────────────────────────────────────────
 
-// Register
 app.post('/api/auth/register', async (req, res) => {
   const { name, email, phone, password } = req.body;
   if (!name || !email || !password)
@@ -236,21 +285,17 @@ app.post('/api/auth/register', async (req, res) => {
     const password_hash = await bcrypt.hash(password, 10);
     db.query(
       'INSERT INTO users (name, email, phone, password_hash) VALUES (?, ?, ?, ?)',
-      [name, email, phone||null, password_hash],
+      [name, email, phone || null, password_hash],
       (err2, result) => {
         if (err2) return res.status(500).json({ error: err2.message });
         const token = jwt.sign({ id:result.insertId, name, email }, JWT_SECRET, { expiresIn:'30d' });
-
-        // Welcome SMS
-        if (phone) sendSMS(phone, `Welcome to Amarya, ${name}! Your account is ready. Discover & book luxury hotels across Africa. - Amarya`);
-
+        if (phone) sendSMS(phone, `Welcome to Amarya, ${name}! Your account is ready. - Amarya`);
         res.json({ success:true, token, user:{ id:result.insertId, name, email, phone } });
       }
     );
   });
 });
 
-// Login
 app.post('/api/auth/login', (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) return res.status(400).json({ error: 'Email and password required.' });
@@ -268,7 +313,6 @@ app.post('/api/auth/login', (req, res) => {
   });
 });
 
-// Get current user profile
 app.get('/api/auth/me', authMiddleware, (req, res) => {
   db.query('SELECT id, name, email, phone, created_at FROM users WHERE id = ?', [req.user.id], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
@@ -277,15 +321,14 @@ app.get('/api/auth/me', authMiddleware, (req, res) => {
   });
 });
 
-// Update profile
 app.put('/api/auth/me', authMiddleware, async (req, res) => {
   const { name, phone, password } = req.body;
   let sql = 'UPDATE users SET name=?, phone=? WHERE id=?';
-  let params = [name, phone||null, req.user.id];
+  let params = [name, phone || null, req.user.id];
   if (password && password.length >= 6) {
     const hash = await bcrypt.hash(password, 10);
     sql = 'UPDATE users SET name=?, phone=?, password_hash=? WHERE id=?';
-    params = [name, phone||null, hash, req.user.id];
+    params = [name, phone || null, hash, req.user.id];
   }
   db.query(sql, params, (err) => {
     if (err) return res.status(500).json({ error: err.message });
@@ -293,7 +336,6 @@ app.put('/api/auth/me', authMiddleware, async (req, res) => {
   });
 });
 
-// User's booking history
 app.get('/api/auth/bookings', authMiddleware, (req, res) => {
   const sql = `
     SELECT b.*,
@@ -367,19 +409,101 @@ app.post('/api/hotels/apply', (req, res) => {
     return res.status(400).json({ error: 'Missing required fields.' });
   db.query(
     'INSERT INTO hotel_applications (hotel_name,city,country,contact_name,email,phone,message) VALUES (?,?,?,?,?,?,?)',
-    [hotel_name, city, country, contact_name, email, phone||null, message||null],
+    [hotel_name, city, country, contact_name, email, phone || null, message || null],
     (err, result) => {
       if (err) return res.status(500).json({ error: err.message });
+
+      // ── Notify admin about new partner application ──
+      const adminEmail = process.env.BREVO_USER || process.env.EMAIL_USER;
+      if (adminEmail) {
+        sendEmail(
+          adminEmail,
+          `New Partner Application — ${hotel_name}`,
+          `<div style="font-family:Arial,sans-serif;max-width:600px;">
+            <div style="background:#0a0e17;padding:30px;text-align:center;">
+              <h1 style="color:#c4a050;margin:0;">AMARYA</h1>
+            </div>
+            <div style="background:#f9f9f9;padding:30px;">
+              <h2>New Hotel Partner Application</h2>
+              <p><strong>Hotel:</strong> ${hotel_name}</p>
+              <p><strong>Location:</strong> ${city}, ${country}</p>
+              <p><strong>Contact:</strong> ${contact_name}</p>
+              <p><strong>Email:</strong> ${email}</p>
+              <p><strong>Phone:</strong> ${phone || 'N/A'}</p>
+              <p><strong>Message:</strong> ${message || 'N/A'}</p>
+            </div>
+          </div>`
+        );
+      }
+
       res.json({ success:true, application_id:result.insertId });
     }
   );
 });
 
 // ─────────────────────────────────────────────────────────
-//  REVIEWS & RATINGS
+//  CONTACT FORM  ← NEW ROUTE (was missing before)
+// ─────────────────────────────────────────────────────────
+app.post('/api/contact', (req, res) => {
+  const { name, email, subject, message } = req.body;
+  if (!name || !email || !message)
+    return res.status(400).json({ error: 'Name, email and message are required.' });
+
+  const adminEmail = process.env.BREVO_USER || process.env.EMAIL_USER;
+
+  console.log(`📬 Contact form from ${name} <${email}> — ${subject}`);
+
+  if (adminEmail) {
+    sendEmail(
+      adminEmail,
+      `Contact Form: ${subject || 'New Message'} — from ${name}`,
+      `<div style="font-family:Arial,sans-serif;max-width:600px;">
+        <div style="background:#0a0e17;padding:30px;text-align:center;">
+          <h1 style="color:#c4a050;letter-spacing:4px;margin:0;">AMARYA</h1>
+        </div>
+        <div style="background:#f9f9f9;padding:30px;">
+          <h2 style="color:#333;">New Contact Message 📬</h2>
+          <table style="width:100%;border-collapse:collapse;">
+            <tr style="background:#f5f5f5"><td style="padding:10px;color:#666;border:1px solid #eee;">Name</td><td style="padding:10px;font-weight:bold;border:1px solid #eee;">${name}</td></tr>
+            <tr style="background:#fff"><td style="padding:10px;color:#666;border:1px solid #eee;">Email</td><td style="padding:10px;font-weight:bold;border:1px solid #eee;">${email}</td></tr>
+            <tr style="background:#f5f5f5"><td style="padding:10px;color:#666;border:1px solid #eee;">Subject</td><td style="padding:10px;font-weight:bold;border:1px solid #eee;">${subject || 'N/A'}</td></tr>
+            <tr style="background:#fff"><td style="padding:10px;color:#666;border:1px solid #eee;">Message</td><td style="padding:10px;border:1px solid #eee;">${message}</td></tr>
+          </table>
+          <p style="margin-top:20px;color:#666;">Reply directly to: <a href="mailto:${email}">${email}</a></p>
+        </div>
+        <div style="background:#0a0e17;padding:20px;text-align:center;">
+          <p style="color:#c4a050;margin:0;">amarya.netlify.app</p>
+        </div>
+      </div>`
+    );
+  } else {
+    console.log(`⚠️  No email credentials set. Contact from ${name}: ${message}`);
+  }
+
+  // Also send auto-reply to the person who contacted
+  sendEmail(
+    email,
+    'We received your message — Amarya',
+    `<div style="font-family:Arial,sans-serif;max-width:600px;">
+      <div style="background:#0a0e17;padding:30px;text-align:center;">
+        <h1 style="color:#c4a050;letter-spacing:4px;margin:0;">AMARYA</h1>
+      </div>
+      <div style="background:#f9f9f9;padding:30px;">
+        <h2>Hi ${name},</h2>
+        <p>Thank you for getting in touch. We've received your message and will reply within 24 hours.</p>
+        <p style="color:#666;font-style:italic;">"${message}"</p>
+        <p>Best regards,<br/><strong>The Amarya Team</strong></p>
+      </div>
+    </div>`
+  );
+
+  res.json({ success: true });
+});
+
+// ─────────────────────────────────────────────────────────
+//  REVIEWS
 // ─────────────────────────────────────────────────────────
 
-// Get reviews for a hotel
 app.get('/api/hotels/:id/reviews', (req, res) => {
   db.query(
     'SELECT * FROM reviews WHERE hotel_id = ? ORDER BY created_at DESC',
@@ -391,7 +515,6 @@ app.get('/api/hotels/:id/reviews', (req, res) => {
   );
 });
 
-// Post a review (optionally authenticated)
 app.post('/api/hotels/:id/reviews', optionalAuth, (req, res) => {
   const { guest_name, rating, comment, stay_date } = req.body;
   const hotel_id = req.params.id;
@@ -404,7 +527,7 @@ app.post('/api/hotels/:id/reviews', optionalAuth, (req, res) => {
 
   db.query(
     'INSERT INTO reviews (hotel_id, user_id, guest_name, rating, comment, stay_date) VALUES (?,?,?,?,?,?)',
-    [hotel_id, user_id, guest_name, rating, comment||null, stay_date||null],
+    [hotel_id, user_id, guest_name, rating, comment || null, stay_date || null],
     (err, result) => {
       if (err) return res.status(500).json({ error: err.message });
       res.json({ success:true, review_id:result.insertId });
@@ -412,7 +535,6 @@ app.post('/api/hotels/:id/reviews', optionalAuth, (req, res) => {
   );
 });
 
-// Get overall rating stats for a hotel
 app.get('/api/hotels/:id/rating', (req, res) => {
   db.query(
     `SELECT
@@ -433,7 +555,7 @@ app.get('/api/hotels/:id/rating', (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────
-//  ROOMS — merged DB + Amadeus
+//  ROOMS
 // ─────────────────────────────────────────────────────────
 
 app.get('/api/rooms', async (req, res) => {
@@ -463,18 +585,16 @@ app.get('/api/rooms', async (req, res) => {
     if (err) return res.status(500).json({ error: err.message });
 
     const localRooms = dbRooms.map(r => ({ ...r, source:'local' }));
-
     let amadeusRooms = [];
+
     const hotelWords = ['hotel','resort','lodge','inn','palace','suites','golden','royal','grand','plaza','tulip','marriott','movenpick','alisa','miklin','kempinski','labadi','busua','elmina','zaina','erata','senchi','alliance','kingstel','raybow','lancaster','mensvic'];
     const looksLikeHotelName = q ? hotelWords.some(w => q.toLowerCase().includes(w)) : false;
 
     if (amadeusEnabled && q && !looksLikeHotelName) {
       const iata = cityToIata(q);
       if (iata) {
-        console.log(`🌍 Amadeus: ${q} → ${iata}`);
-        const fetched = await fetchAmadeusHotels(iata, check_in, check_out, parseInt(guests)||1);
+        const fetched = await fetchAmadeusHotels(iata, check_in, check_out, parseInt(guests) || 1);
         if (fetched) amadeusRooms = fetched;
-        console.log(`✅ Amadeus: ${amadeusRooms.length} offers`);
       }
     }
 
@@ -483,7 +603,7 @@ app.get('/api/rooms', async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────
-//  MAP — hotels with coordinates for map view
+//  MAP
 // ─────────────────────────────────────────────────────────
 
 app.get('/api/map/hotels', (req, res) => {
@@ -532,26 +652,23 @@ app.post('/api/bookings', optionalAuth, async (req, res) => {
 
   const user_id = req.user?.id || null;
 
-  // ── AMADEUS BOOKING ─────────────────────────────────
+  // ── AMADEUS BOOKING ──────────────────────────────────
   if (source === 'amadeus' && offer_id) {
-    const priceGHS = Math.round((price_usd||0) * 15 * nights);
+    const priceGHS = Math.round((price_usd || 0) * 15 * nights);
     db.query(
       `INSERT INTO bookings (room_id,hotel_id,user_id,customer_name,customer_email,customer_phone,check_in,check_out,nights,guests,total_price,commission_amount,hotel_payout,special_requests,status,hotel_notified,external_ref)
        VALUES (NULL,NULL,?,?,?,?,?,?,?,?,?,0,?,?,'confirmed',1,?)`,
-      [user_id, customer_name, customer_email, customer_phone||null, check_in, check_out, nights, guests||1, priceGHS, priceGHS, special_requests||null, 'AMADEUS-'+Date.now()],
-      (err2, result) => { if (err2) console.error('DB insert error:', err2.message); }
+      [user_id, customer_name, customer_email, customer_phone || null, check_in, check_out, nights, guests || 1, priceGHS, priceGHS, special_requests || null, 'AMADEUS-' + Date.now()],
+      (err2) => { if (err2) console.error('DB insert error:', err2.message); }
     );
 
-    // SMS to guest
     if (customer_phone) {
-      await sendSMS(customer_phone,
-        `Hi ${customer_name}! Your booking at ${ext_hotel_name} is confirmed. Check-in: ${check_in}. Check-out: ${check_out}. Booking ref: AMADEUS-${Date.now()}. - Amarya`
-      );
+      sendSMS(customer_phone, `Hi ${customer_name}! Your booking at ${ext_hotel_name} is confirmed. Check-in: ${check_in}. Check-out: ${check_out}. - Amarya`);
     }
 
     return res.json({
-      success:true, booking_id:'AMADEUS-'+Date.now(),
-      total_price:priceGHS, nights, hotel_name:ext_hotel_name||'External Hotel',
+      success:true, booking_id:'AMADEUS-' + Date.now(),
+      total_price:priceGHS, nights, hotel_name:ext_hotel_name || 'External Hotel',
       source:'amadeus', hotel_payout:priceGHS, commission_amount:0
     });
   }
@@ -577,46 +694,85 @@ app.post('/api/bookings', optionalAuth, async (req, res) => {
     db.query(
       `INSERT INTO bookings (room_id,hotel_id,user_id,customer_name,customer_email,customer_phone,check_in,check_out,nights,guests,total_price,commission_amount,hotel_payout,special_requests,status,hotel_notified)
        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,'confirmed',0)`,
-      [room_id, room.hotel_id, user_id, customer_name, customer_email, customer_phone||null, check_in, check_out, nights, guests||1, total_price, commission_amount, hotel_payout, special_requests||null],
+      [room_id, room.hotel_id, user_id, customer_name, customer_email, customer_phone || null, check_in, check_out, nights, guests || 1, total_price, commission_amount, hotel_payout, special_requests || null],
       async (err2, result) => {
         if (err2) return res.status(500).json({ error: err2.message });
 
         db.query("UPDATE rooms SET status='occupied' WHERE id=?", [room_id]);
 
-        const bookingRecord = { id:result.insertId, customer_name, customer_email, customer_phone, check_in, check_out, nights, guests:guests||1, special_requests, hotel_payout, commission_amount };
+        const bookingRecord = {
+          id: result.insertId, customer_name, customer_email, customer_phone,
+          check_in, check_out, nights, guests: guests || 1,
+          special_requests, hotel_payout, commission_amount
+        };
 
-        // Email hotel
-        // Send email in background - dont block the response
-        notifyHotel({ email:room.hotel_email, commission:room.commission, hotel_name:room.hotel_name }, bookingRecord, room)
-          .then(() => db.query("UPDATE bookings SET hotel_notified=1 WHERE id=?", [result.insertId]))
-          .catch(e => console.error('Email error:', e.message));
-
-        // Respond immediately
+        // Respond immediately — don't block on email
         res.json({
           success:true, booking_id:result.insertId,
           total_price, nights, hotel_name:room.hotel_name,
           hotel_payout, commission_amount, source:'local'
         });
 
-        // SMS and email in background - non blocking
+        // ── All notifications run in background ──────
         const bookingNum = result.insertId;
+
+        // 1. Email hotel
+        notifyHotel(
+          { email:room.hotel_email, commission:room.commission, hotel_name:room.hotel_name },
+          bookingRecord,
+          room
+        ).then(() => db.query("UPDATE bookings SET hotel_notified=1 WHERE id=?", [bookingNum]))
+         .catch(e => console.error('Hotel email error:', e.message));
+
+        // 2. Guest confirmation email
+        sendEmail(
+          customer_email,
+          `Booking Confirmed #${bookingNum} — ${room.hotel_name}`,
+          `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+            <div style="background:#0a0e17;padding:30px;text-align:center;">
+              <h1 style="color:#c4a050;letter-spacing:4px;margin:0;">AMARYA</h1>
+            </div>
+            <div style="background:#f9f9f9;padding:30px;">
+              <h2 style="color:#333;">Booking Confirmed ✓</h2>
+              <p>Dear <strong>${customer_name}</strong>, your reservation is confirmed.</p>
+              <table style="width:100%;border-collapse:collapse;margin:20px 0;">
+                ${[
+                  ['Booking #', bookingNum],
+                  ['Hotel', room.hotel_name],
+                  ['Room', `${room.type} — #${room.room_number}`],
+                  ['Check In', check_in],
+                  ['Check Out', check_out],
+                  ['Nights', nights],
+                  ['Guests', guests || 1],
+                  ['Total', `GHS ${total_price.toLocaleString()}`],
+                ].map(([l, v], i) =>
+                  `<tr style="background:${i % 2 ? '#fff' : '#f5f5f5'}">
+                    <td style="padding:10px;color:#666;border:1px solid #eee;">${l}</td>
+                    <td style="padding:10px;font-weight:bold;border:1px solid #eee;">${v}</td>
+                  </tr>`
+                ).join('')}
+              </table>
+              <p style="color:#666;">Thank you for choosing Amarya. We look forward to welcoming you.</p>
+            </div>
+            <div style="background:#0a0e17;padding:20px;text-align:center;">
+              <p style="color:#c4a050;margin:0;">amarya.netlify.app</p>
+            </div>
+          </div>`
+        ).catch(e => console.error('Guest email error:', e.message));
+
+        // 3. SMS to guest
         if (customer_phone) {
           sendSMS(customer_phone,
-            'Hi '+customer_name+'! Booking #'+bookingNum+' confirmed at '+room.hotel_name+'. Room: '+room.type+'. Check-in: '+check_in+'. Check-out: '+check_out+'. Total: GHS '+total_price.toLocaleString()+'. - Amarya'
-          ).catch(e => console.error('Guest SMS failed:', e.message));
+            `Hi ${customer_name}! Booking #${bookingNum} confirmed at ${room.hotel_name}. Room: ${room.type}. Check-in: ${check_in}. Check-out: ${check_out}. Total: GHS ${total_price.toLocaleString()}. - Amarya`
+          ).catch(e => console.error('Guest SMS error:', e.message));
         }
+
+        // 4. SMS to hotel
         if (room.hotel_phone) {
           sendSMS(room.hotel_phone,
-            'New Amarya booking! Guest: '+customer_name+'. Room: '+room.type+' #'+room.room_number+'. Check-in: '+check_in+'. Payout: GHS '+hotel_payout.toLocaleString()+'.'
-          ).catch(e => console.error('Hotel SMS failed:', e.message));
+            `New Amarya booking! Guest: ${customer_name}. Room: ${room.type} #${room.room_number}. Check-in: ${check_in}. Payout: GHS ${hotel_payout.toLocaleString()}.`
+          ).catch(e => console.error('Hotel SMS error:', e.message));
         }
-        // Guest confirmation email
-        sendEmail(customer_email,
-          'Booking Confirmed #'+bookingNum+' — '+room.hotel_name,
-          '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;"><div style="background:#0a0e17;padding:30px;text-align:center;"><h1 style="color:#c4a050;letter-spacing:4px;margin:0;">AMARYA</h1></div><div style="background:#f9f9f9;padding:30px;"><h2 style="color:#333;">Booking Confirmed ✓</h2><p>Dear '+customer_name+', your reservation is confirmed.</p><table style="width:100%;border-collapse:collapse;margin:20px 0;">'+
-          [['Booking #', bookingNum],['Hotel', room.hotel_name],['Room', room.type+' — #'+room.room_number],['Check In', check_in],['Check Out', check_out],['Nights', nights],['Guests', guests||1],['Total', 'GHS '+total_price.toLocaleString()]].map(([l,v],i)=>'<tr style="background:'+(i%2?'#fff':'#f5f5f5')+'"><td style="padding:10px;color:#666;border:1px solid #eee;">'+l+'</td><td style="padding:10px;font-weight:bold;border:1px solid #eee;">'+v+'</td></tr>').join('')+
-          '</table><p style="color:#666;">Thank you for choosing Amarya. We look forward to welcoming you.</p></div><div style="background:#0a0e17;padding:20px;text-align:center;"><p style="color:#c4a050;margin:0;">amarya.netlify.app</p></div></div>'
-        ).catch(e => console.error('Guest email failed:', e.message));
       }
     );
   });
@@ -668,16 +824,16 @@ app.get('/api/applications', (req, res) => {
 app.get('/api/status', (req, res) => {
   res.json({
     server:  'online',
-    email:   emailEnabled   ? 'enabled'  : 'simulated',
-    amadeus: amadeusEnabled ? 'enabled'  : 'disabled',
+    email:   emailEnabled ? 'enabled (Brevo)' : 'disabled — set BREVO_USER + BREVO_PASS',
+    amadeus: amadeusEnabled ? 'enabled' : 'disabled',
     sms:     process.env.ARKESEL_API_KEY ? 'enabled' : 'simulated',
   });
 });
 
-// Keep-alive ping every 5 minutes to prevent Railway from sleeping
+// Keep-alive ping
 setInterval(() => {
   const http = require('http');
-  http.get('http://localhost:5000/api/status', (res) => {
+  http.get('http://localhost:5000/api/status', () => {
     console.log('🔄 Keep-alive ping OK');
   }).on('error', () => {});
 }, 5 * 60 * 1000);
@@ -685,7 +841,7 @@ setInterval(() => {
 const PORT = 5000;
 app.listen(PORT, () => {
   console.log(`\n🚀 Amarya → http://localhost:${PORT}`);
-  console.log(`📧 Email:   ${emailEnabled ? 'ENABLED' : 'SIMULATED'}`);
-  console.log(`📱 SMS:     ${process.env.ARKESEL_API_KEY ? 'ENABLED' : 'SIMULATED — sign up at arkesel.com'}`);
+  console.log(`📧 Email:   ${emailEnabled ? 'ENABLED (Brevo SMTP)' : 'DISABLED — set BREVO_USER and BREVO_PASS'}`);
+  console.log(`📱 SMS:     ${process.env.ARKESEL_API_KEY ? 'ENABLED' : 'SIMULATED'}`);
   console.log(`🌍 Amadeus: ${amadeusEnabled ? 'ENABLED' : 'DISABLED'}\n`);
 });

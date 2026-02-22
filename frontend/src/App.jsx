@@ -778,11 +778,17 @@ export default function App() {
     catch { alert("Failed to cancel."); }
   };
 
-  const handleContactSubmit = (e) => {
-    e.preventDefault(); setContactSent(true);
+ const handleContactSubmit = async (e) => {
+  e.preventDefault();
+  try {
+    await axios.post(`${API}/api/contact`, contactForm);
+    setContactSent(true);
     setTimeout(() => setContactSent(false), 4000);
     setContactForm({ name:"", email:"", subject:"", message:"" });
-  };
+  } catch (err) {
+    alert("Failed to send message. Please try again.");
+  }
+};
 
   const handleApplySubmit = async (e) => {
     e.preventDefault();
