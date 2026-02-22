@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
 
-const API = "https://amarya-hotel-app-production.up.railway.app";
+const API = "http://localhost:5000";
 
 const AMENITY_ICONS = {
   "Free WiFi":"📶","King Bed":"🛏️","Ocean View":"🌊","Balcony":"🏠","Jacuzzi":"♨️",
@@ -428,7 +428,7 @@ function Nav({ page, onNavigate, onFetchRooms, onFetchHotels, search, currency, 
 
       {/* Desktop links */}
       <div className="nav-links">
-        {[["Search","results"],[t.hotels,"hotels"],[t.experiences,"experiences"],[t.about,"about"],[t.contact,"contact"],[t.admin,"admin"]].map(([label,pg]) => (
+        {[["Search","results"],[t.hotels,"hotels"],[t.experiences,"experiences"],[t.about,"about"],[t.contact,"contact"]].concat(user?.email==="kellysyder753@gmail.com"?[[t.admin,"admin"]]:[]).map(([label,pg]) => (
           <span key={pg} onClick={() => go(pg)} style={{ cursor:"pointer", fontSize:11, letterSpacing:1.5, textTransform:"uppercase", color:page===pg?"#c4a050":"rgba(255,255,255,0.6)", fontFamily:"'Cormorant Garamond',Georgia,serif", fontWeight:600, transition:"color 0.2s", paddingBottom:2, borderBottom:page===pg?"1px solid #c4a050":"1px solid transparent" }}>{label}</span>
         ))}
       </div>
@@ -510,7 +510,7 @@ function Nav({ page, onNavigate, onFetchRooms, onFetchHotels, search, currency, 
       {/* Mobile dropdown */}
       {menuOpen && (
         <div style={{ position:"fixed", top:70, left:0, right:0, background:"rgba(6,9,18,0.99)", borderBottom:"1px solid rgba(196,160,80,0.2)", padding:"24px 5vw 32px", zIndex:998, display:"flex", flexDirection:"column", gap:16 }}>
-          {[["Search","results"],[t.hotels,"hotels"],[t.experiences,"experiences"],[t.about,"about"],[t.contact,"contact"],[t.admin,"admin"],[t.listHotel,"partner"]].map(([label,pg]) => (
+          {[["Search","results"],[t.hotels,"hotels"],[t.experiences,"experiences"],[t.about,"about"],[t.contact,"contact"],[t.listHotel,"partner"]].concat(user?.email==="kellysyder753@gmail.com"?[[t.admin,"admin"]]:[]).map(([label,pg]) => (
             <span key={pg} onClick={() => go(pg)} style={{ cursor:"pointer", fontSize:15, letterSpacing:2, textTransform:"uppercase", color:page===pg?"#c4a050":"rgba(255,255,255,0.7)", fontFamily:"'Cormorant Garamond',Georgia,serif", paddingBottom:12, borderBottom:"1px solid rgba(255,255,255,0.05)" }}>{label}</span>
           ))}
           {/* Mobile currency + language */}
