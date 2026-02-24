@@ -58,293 +58,12 @@ const LANGUAGES = [
 ];
 
 const TRANSLATIONS = {
-  en: {
-    search:"Search", checkIn:"Check In", checkOut:"Check Out", guests:"Guests",
-    bookNow:"Book Now", available:"Available", occupied:"Occupied", from:"From",
-    perNight:"/ night", reserve:"Reserve", hotels:"Hotels", experiences:"Experiences",
-    about:"About", contact:"Contact", admin:"Admin", listHotel:"List Hotel",
-    nightsLabel:"nights", total:"Total", confirm:"Confirm", processing:"Processing...",
-    home:"Home", bookAnother:"Book Another", unavailable:"Unavailable",
-    destination:"Destination", results:"Search Results", signIn:"Sign In",
-    signOut:"Sign Out", myBookings:"My Bookings", noBookings:"No bookings yet",
-    findHotels:"Find Hotels", bookingConfirmed:"Booking Confirmed",
-    welcomeBack:"Welcome back", almostThere:"Almost There",
-    completeReservation:"Complete Your Reservation", fullName:"Full Name",
-    emailAddress:"Email Address", phoneNumber:"Phone Number", arrival:"Arrival",
-    departure:"Departure", specialRequests:"Special Requests",
-    specialRequestsPlaceholder:"Early check-in, dietary needs, celebrations...",
-    partnerWith:"Partner With Us", applyToPartner:"Apply to Partner",
-    submitApplication:"Submit Application", sendMessage:"Send Message",
-    messageSent:"Message sent! We'll reply within 24 hours.",
-    applicationReceived:"Application Received!",
-    applicationReview:"We'll review your application and get back to you within 48 hours.",
-    writeReview:"Write a Review", submitReview:"Submit Review",
-    thankYouReview:"Thank you for your review!", noReviews:"No reviews yet — be the first to review this hotel.",
-    yourName:"Your Name", rating:"Rating", whenDidYouStay:"When did you stay?",
-    yourReview:"Your Review", shareExperience:"Share your experience at this hotel...",
-    guestReviews:"Guest Reviews", availableRooms:"Available Rooms",
-    roomSize:"Room Size", maxGuests:"Max Guests", level:"Level", amenities:"Amenities",
-    backBtn:"← Back", viewAll:"View All →", viewRooms:"View Rooms →",
-    partnerHotels:"Partner Hotels", ourNetwork:"Our Network",
-    bookingManagement:"Booking Management", dashboard:"Dashboard",
-    totalBookings:"Total Bookings", availableRoomsLabel:"Available Rooms",
-    popularDestinations:"Popular Destinations", scrollDown:"Scroll",
-    howItWorks:"How Amarya Works", simpleProcess:"Simple Process",
-    featuredRooms:"Top Rooms Today", featured:"Featured",
-    forHotelOwners:"For Hotel Owners", listYourHotel:"List Your Hotel on Amarya",
-    confirmBooking:"Confirm", cancelBooking:"Cancel",
-    searchingHotels:"SEARCHING HOTELS...", noHotelsFound:"No hotels found",
-    tryAnotherCity:"Try another city or check back later as more hotels join Amarya.",
-    roomsFound:"rooms found", worldwide:"worldwide", in:"in",
-    nightsStayed:"Stayed", poor:"Poor", fair:"Fair", good:"Good",
-    veryGood:"Very Good", excellent:"Excellent",
-    hotelMap:"Hotel Map", hotelsOnMap:"Hotels on Map",
-    showingHotels:"Showing", hotels2:"hotels", clickPin:"click any pin to see details",
-    searchCity:"SEARCH A CITY TO SEE HOTELS ON MAP",
-    googleMaps:"Google Maps ↗", enquire:"Enquire",
-    getInTouch:"Get In Touch", contactUs:"Contact Us",
-    ourStory:"Our Story", aboutAmarya:"About Amarya",
-    guestExperiences:"Guest Experiences",
-  },
-  fr: {
-    search:"Rechercher", checkIn:"Arrivée", checkOut:"Départ", guests:"Voyageurs",
-    bookNow:"Réserver", available:"Disponible", occupied:"Occupé", from:"À partir de",
-    perNight:"/ nuit", reserve:"Réserver", hotels:"Hôtels", experiences:"Expériences",
-    about:"À propos", contact:"Contact", admin:"Admin", listHotel:"Ajouter Hôtel",
-    nightsLabel:"nuits", total:"Total", confirm:"Confirmer", processing:"Traitement...",
-    home:"Accueil", bookAnother:"Autre Réservation", unavailable:"Indisponible",
-    destination:"Destination", results:"Résultats", signIn:"Se connecter",
-    signOut:"Se déconnecter", myBookings:"Mes réservations", noBookings:"Aucune réservation",
-    findHotels:"Trouver des hôtels", bookingConfirmed:"Réservation confirmée",
-    welcomeBack:"Bienvenue", almostThere:"Presque là",
-    completeReservation:"Complétez votre réservation", fullName:"Nom complet",
-    emailAddress:"Adresse e-mail", phoneNumber:"Numéro de téléphone", arrival:"Arrivée",
-    departure:"Départ", specialRequests:"Demandes spéciales",
-    specialRequestsPlaceholder:"Arrivée anticipée, régime alimentaire, célébrations...",
-    partnerWith:"Partenariat", applyToPartner:"Devenir partenaire",
-    submitApplication:"Soumettre", sendMessage:"Envoyer",
-    messageSent:"Message envoyé! Nous répondrons sous 24h.",
-    applicationReceived:"Candidature reçue!",
-    applicationReview:"Nous examinerons votre candidature sous 48 heures.",
-    writeReview:"Écrire un avis", submitReview:"Soumettre l'avis",
-    thankYouReview:"Merci pour votre avis!", noReviews:"Aucun avis — soyez le premier.",
-    yourName:"Votre nom", rating:"Note", whenDidYouStay:"Quand avez-vous séjourné?",
-    yourReview:"Votre avis", shareExperience:"Partagez votre expérience...",
-    guestReviews:"Avis des clients", availableRooms:"Chambres disponibles",
-    roomSize:"Taille", maxGuests:"Capacité", level:"Étage", amenities:"Équipements",
-    backBtn:"← Retour", viewAll:"Voir tout →", viewRooms:"Voir les chambres →",
-    partnerHotels:"Hôtels partenaires", ourNetwork:"Notre réseau",
-    bookingManagement:"Gestion des réservations", dashboard:"Tableau de bord",
-    totalBookings:"Réservations", availableRoomsLabel:"Chambres disponibles",
-    popularDestinations:"Destinations populaires", scrollDown:"Défiler",
-    howItWorks:"Comment fonctionne Amarya", simpleProcess:"Processus simple",
-    featuredRooms:"Meilleures chambres", featured:"À la une",
-    forHotelOwners:"Pour les hôteliers", listYourHotel:"Listez votre hôtel sur Amarya",
-    confirmBooking:"Confirmer", cancelBooking:"Annuler",
-    searchingHotels:"RECHERCHE EN COURS...", noHotelsFound:"Aucun hôtel trouvé",
-    tryAnotherCity:"Essayez une autre ville.",
-    roomsFound:"chambres trouvées", worldwide:"dans le monde", in:"à",
-    nightsStayed:"Séjourné", poor:"Mauvais", fair:"Passable", good:"Bien",
-    veryGood:"Très bien", excellent:"Excellent",
-    hotelMap:"Carte des hôtels", hotelsOnMap:"Hôtels sur la carte",
-    showingHotels:"Affichage de", hotels2:"hôtels", clickPin:"cliquez pour les détails",
-    searchCity:"RECHERCHEZ UNE VILLE POUR VOIR LES HÔTELS",
-    googleMaps:"Google Maps ↗", enquire:"Renseigner",
-    getInTouch:"Contactez-nous", contactUs:"Contactez-nous",
-    ourStory:"Notre histoire", aboutAmarya:"À propos d'Amarya",
-    guestExperiences:"Expériences clients",
-  },
-  es: {
-    search:"Buscar", checkIn:"Llegada", checkOut:"Salida", guests:"Huéspedes",
-    bookNow:"Reservar", available:"Disponible", occupied:"Ocupado", from:"Desde",
-    perNight:"/ noche", reserve:"Reservar", hotels:"Hoteles", experiences:"Experiencias",
-    about:"Sobre", contact:"Contacto", admin:"Admin", listHotel:"Añadir Hotel",
-    nightsLabel:"noches", total:"Total", confirm:"Confirmar", processing:"Procesando...",
-    home:"Inicio", bookAnother:"Otra Reserva", unavailable:"No disponible",
-    destination:"Destino", results:"Resultados", signIn:"Iniciar sesión",
-    signOut:"Cerrar sesión", myBookings:"Mis reservas", noBookings:"Sin reservas",
-    findHotels:"Buscar hoteles", bookingConfirmed:"Reserva confirmada",
-    welcomeBack:"Bienvenido", almostThere:"Casi listo",
-    completeReservation:"Completa tu reserva", fullName:"Nombre completo",
-    emailAddress:"Correo electrónico", phoneNumber:"Teléfono", arrival:"Llegada",
-    departure:"Salida", specialRequests:"Peticiones especiales",
-    specialRequestsPlaceholder:"Llegada anticipada, dieta, celebraciones...",
-    partnerWith:"Asociarse", applyToPartner:"Solicitar asociación",
-    submitApplication:"Enviar solicitud", sendMessage:"Enviar mensaje",
-    messageSent:"¡Mensaje enviado! Te responderemos en 24h.",
-    applicationReceived:"¡Solicitud recibida!",
-    applicationReview:"Revisaremos tu solicitud en 48 horas.",
-    writeReview:"Escribir reseña", submitReview:"Enviar reseña",
-    thankYouReview:"¡Gracias por tu reseña!", noReviews:"Sin reseñas aún.",
-    yourName:"Tu nombre", rating:"Puntuación", whenDidYouStay:"¿Cuándo te alojaste?",
-    yourReview:"Tu reseña", shareExperience:"Comparte tu experiencia...",
-    guestReviews:"Reseñas de huéspedes", availableRooms:"Habitaciones disponibles",
-    roomSize:"Tamaño", maxGuests:"Capacidad", level:"Planta", amenities:"Comodidades",
-    backBtn:"← Volver", viewAll:"Ver todo →", viewRooms:"Ver habitaciones →",
-    partnerHotels:"Hoteles asociados", ourNetwork:"Nuestra red",
-    bookingManagement:"Gestión de reservas", dashboard:"Panel de control",
-    totalBookings:"Reservas", availableRoomsLabel:"Habitaciones disponibles",
-    popularDestinations:"Destinos populares", scrollDown:"Desplazar",
-    howItWorks:"Cómo funciona Amarya", simpleProcess:"Proceso simple",
-    featuredRooms:"Mejores habitaciones", featured:"Destacado",
-    forHotelOwners:"Para hoteleros", listYourHotel:"Lista tu hotel en Amarya",
-    confirmBooking:"Confirmar", cancelBooking:"Cancelar",
-    searchingHotels:"BUSCANDO HOTELES...", noHotelsFound:"No se encontraron hoteles",
-    tryAnotherCity:"Prueba otra ciudad.",
-    roomsFound:"habitaciones encontradas", worldwide:"en todo el mundo", in:"en",
-    nightsStayed:"Hospedado", poor:"Malo", fair:"Regular", good:"Bueno",
-    veryGood:"Muy bueno", excellent:"Excelente",
-    hotelMap:"Mapa de hoteles", hotelsOnMap:"Hoteles en el mapa",
-    showingHotels:"Mostrando", hotels2:"hoteles", clickPin:"clic para ver detalles",
-    searchCity:"BUSCA UNA CIUDAD PARA VER HOTELES",
-    googleMaps:"Google Maps ↗", enquire:"Consultar",
-    getInTouch:"Contáctanos", contactUs:"Contáctanos",
-    ourStory:"Nuestra historia", aboutAmarya:"Sobre Amarya",
-    guestExperiences:"Experiencias de huéspedes",
-  },
-  ar: {
-    search:"بحث", checkIn:"الوصول", checkOut:"المغادرة", guests:"ضيوف",
-    bookNow:"احجز الآن", available:"متاح", occupied:"محجوز", from:"من",
-    perNight:"/ ليلة", reserve:"حجز", hotels:"فنادق", experiences:"تجارب",
-    about:"عن", contact:"اتصل", admin:"إدارة", listHotel:"أضف فندق",
-    nightsLabel:"ليالي", total:"المجموع", confirm:"تأكيد", processing:"جارٍ...",
-    home:"الرئيسية", bookAnother:"حجز آخر", unavailable:"غير متاح",
-    destination:"الوجهة", results:"النتائج", signIn:"تسجيل الدخول",
-    signOut:"تسجيل الخروج", myBookings:"حجوزاتي", noBookings:"لا حجوزات بعد",
-    findHotels:"ابحث عن فنادق", bookingConfirmed:"تم تأكيد الحجز",
-    welcomeBack:"مرحباً بعودتك", almostThere:"تقريباً",
-    completeReservation:"أكمل الحجز", fullName:"الاسم الكامل",
-    emailAddress:"البريد الإلكتروني", phoneNumber:"رقم الهاتف", arrival:"الوصول",
-    departure:"المغادرة", specialRequests:"طلبات خاصة",
-    specialRequestsPlaceholder:"تسجيل وصول مبكر، احتياجات غذائية...",
-    partnerWith:"شراكة معنا", applyToPartner:"التقدم للشراكة",
-    submitApplication:"إرسال الطلب", sendMessage:"إرسال الرسالة",
-    messageSent:"تم إرسال الرسالة! سنرد خلال 24 ساعة.",
-    applicationReceived:"تم استلام الطلب!",
-    applicationReview:"سنراجع طلبك خلال 48 ساعة.",
-    writeReview:"كتابة تقييم", submitReview:"إرسال التقييم",
-    thankYouReview:"شكراً على تقييمك!", noReviews:"لا تقييمات بعد.",
-    yourName:"اسمك", rating:"التقييم", whenDidYouStay:"متى أقمت؟",
-    yourReview:"تقييمك", shareExperience:"شارك تجربتك...",
-    guestReviews:"تقييمات الضيوف", availableRooms:"الغرف المتاحة",
-    roomSize:"المساحة", maxGuests:"أقصى ضيوف", level:"الطابق", amenities:"المرافق",
-    backBtn:"→ رجوع", viewAll:"عرض الكل →", viewRooms:"عرض الغرف →",
-    partnerHotels:"الفنادق الشريكة", ourNetwork:"شبكتنا",
-    bookingManagement:"إدارة الحجوزات", dashboard:"لوحة التحكم",
-    totalBookings:"إجمالي الحجوزات", availableRoomsLabel:"الغرف المتاحة",
-    popularDestinations:"الوجهات الشهيرة", scrollDown:"تمرير",
-    howItWorks:"كيف تعمل أماريا", simpleProcess:"عملية بسيطة",
-    featuredRooms:"أفضل الغرف اليوم", featured:"مميز",
-    forHotelOwners:"لأصحاب الفنادق", listYourHotel:"أضف فندقك إلى أماريا",
-    confirmBooking:"تأكيد", cancelBooking:"إلغاء",
-    searchingHotels:"جاري البحث...", noHotelsFound:"لا توجد فنادق",
-    tryAnotherCity:"جرب مدينة أخرى.",
-    roomsFound:"غرف وجدت", worldwide:"في العالم", in:"في",
-    nightsStayed:"أقام", poor:"سيئ", fair:"مقبول", good:"جيد",
-    veryGood:"جيد جداً", excellent:"ممتاز",
-    hotelMap:"خريطة الفنادق", hotelsOnMap:"الفنادق على الخريطة",
-    showingHotels:"عرض", hotels2:"فنادق", clickPin:"انقر لرؤية التفاصيل",
-    searchCity:"ابحث عن مدينة لرؤية الفنادق",
-    googleMaps:"خرائط جوجل ↗", enquire:"استفسار",
-    getInTouch:"تواصل معنا", contactUs:"اتصل بنا",
-    ourStory:"قصتنا", aboutAmarya:"عن أماريا",
-    guestExperiences:"تجارب الضيوف",
-  },
-  tw: {
-    search:"Hwehwɛ", checkIn:"Bra Da", checkOut:"Kɔ Da", guests:"Ahɔho",
-    bookNow:"Bɔ Din", available:"Wɔ Hɔ", occupied:"Wɔ Mu", from:"Fi",
-    perNight:"/ anadwo", reserve:"Di Hɔ", hotels:"Ahemfie", experiences:"Nsɛm",
-    about:"Fa Ho", contact:"Frɛ Yɛn", admin:"Admin", listHotel:"Ka Hotel",
-    nightsLabel:"anadwo", total:"Nyinaa", confirm:"Gyedi", processing:"...",
-    home:"Fie", bookAnother:"Bɔ Bio", unavailable:"Nni Hɔ",
-    destination:"Baabi", results:"Nkɔso", signIn:"Wo Kɔ Mu",
-    signOut:"Pue", myBookings:"Me Din", noBookings:"Din Nni Hɔ",
-    findHotels:"Hwehwɛ Hotel", bookingConfirmed:"Wo Din Adi",
-    welcomeBack:"Akwaaba", almostThere:"Bɛyɛ",
-    completeReservation:"Wie Wo Din", fullName:"Wo Din Nyinaa",
-    emailAddress:"Email", phoneNumber:"Telefon", arrival:"Bra Da",
-    departure:"Kɔ Da", specialRequests:"Asɛm",
-    specialRequestsPlaceholder:"Bra ntɛm, aduane...",
-    partnerWith:"Yɛ Adamfo", applyToPartner:"Bɔ Din Adamfo",
-    submitApplication:"Fa Kɔ", sendMessage:"Fa Kɔ",
-    messageSent:"Wɔ Gye Wo Nsɛm!", applicationReceived:"Wɔ Gye Wo Nsɛm!",
-    applicationReview:"Yɛbɛhwɛ wo asɛm nnansa mu.",
-    writeReview:"Kyerɛw Adwene", submitReview:"Fa Kɔ",
-    thankYouReview:"Medaase!", noReviews:"Adwene nni hɔ.",
-    yourName:"Wo Din", rating:"Nhyehyɛe", whenDidYouStay:"Bɛra da bɛn?",
-    yourReview:"Wo Adwene", shareExperience:"Kyerɛ wo nsɛm...",
-    guestReviews:"Ahɔho Adwene", availableRooms:"Afie Wɔ Hɔ",
-    roomSize:"Afie Kɛse", maxGuests:"Ahɔho", level:"Ɔsoro", amenities:"Adeɛ",
-    backBtn:"← San Kɔ", viewAll:"Hwɛ Nyinaa →", viewRooms:"Hwɛ Afie →",
-    partnerHotels:"Adamfo Hotel", ourNetwork:"Yɛn Kuw",
-    bookingManagement:"Din Ho Nhwɛso", dashboard:"Nhwɛso",
-    totalBookings:"Din Nyinaa", availableRoomsLabel:"Afie Wɔ Hɔ",
-    popularDestinations:"Baabi Bebree", scrollDown:"Sian",
-    howItWorks:"Amarya Yɛ Sɛn", simpleProcess:"Kwan Mmerɛ",
-    featuredRooms:"Afie Kɛse Nnɛ", featured:"Ahorow",
-    forHotelOwners:"Hotel Wura", listYourHotel:"Ka Wo Hotel",
-    confirmBooking:"Gyedi", cancelBooking:"Gyae",
-    searchingHotels:"EHWEHWƐ...", noHotelsFound:"Hotel Nni Hɔ",
-    tryAnotherCity:"Kɔ baabi foforo.",
-    roomsFound:"afie wɔ hɔ", worldwide:"wiase nyinaa", in:"wɔ",
-    nightsStayed:"Tenaa", poor:"Bone", fair:"Ntem", good:"Yiye",
-    veryGood:"Yiye Paa", excellent:"Ɛyɛ Adeɛ",
-    hotelMap:"Hotel Map", hotelsOnMap:"Hotel Wɔ Map So",
-    showingHotels:"Kyerɛ", hotels2:"hotel", clickPin:"klik ho nhwɛ",
-    searchCity:"HWEHWƐ KURO",
-    googleMaps:"Google Maps ↗", enquire:"Bisabisa",
-    getInTouch:"Frɛ Yɛn", contactUs:"Frɛ Yɛn",
-    ourStory:"Yɛn Asɛm", aboutAmarya:"Fa Amarya Ho",
-    guestExperiences:"Ahɔho Nsɛm",
-  },
-  ha: {
-    search:"Nema", checkIn:"Shiga", checkOut:"Fita", guests:"Baƙi",
-    bookNow:"Yi Ajali", available:"Akwai", occupied:"Cike", from:"Daga",
-    perNight:"/ dare", reserve:"Kama", hotels:"Otal", experiences:"Abubuwa",
-    about:"Game Da", contact:"Tuntube", admin:"Admin", listHotel:"Ƙara Otal",
-    nightsLabel:"dare", total:"Jimillar", confirm:"Tabbatar", processing:"...",
-    home:"Gida", bookAnother:"Wani Ajali", unavailable:"Babu",
-    destination:"Wuri", results:"Sakamako", signIn:"Shiga Cikin",
-    signOut:"Fita", myBookings:"Ajalina", noBookings:"Babu Ajali",
-    findHotels:"Nemi Otal", bookingConfirmed:"An Tabbatar Ajali",
-    welcomeBack:"Barka Da Dawowa", almostThere:"Kusa",
-    completeReservation:"Kammala Ajali", fullName:"Cikakken Suna",
-    emailAddress:"Imel", phoneNumber:"Wayar Hannu", arrival:"Zuwa",
-    departure:"Tafi", specialRequests:"Buƙatun Musamman",
-    specialRequestsPlaceholder:"Shiga da wuri, abinci...",
-    partnerWith:"Haɗin Gwiwa", applyToPartner:"Nema Haɗin Gwiwa",
-    submitApplication:"Aika Buƙata", sendMessage:"Aika Sako",
-    messageSent:"An aika sako! Za mu amsa cikin awanni 24.",
-    applicationReceived:"An Karɓi Buƙatar!",
-    applicationReview:"Za mu duba buƙatarku cikin awanni 48.",
-    writeReview:"Rubuta Ra'ayi", submitReview:"Aika Ra'ayi",
-    thankYouReview:"Na gode da ra'ayinka!", noReviews:"Babu ra'ayi tukuna.",
-    yourName:"Sunanka", rating:"Ƙima", whenDidYouStay:"Yaushe ka zauna?",
-    yourReview:"Ra'ayinka", shareExperience:"Raba kwarewarka...",
-    guestReviews:"Ra'ayoyin Baƙi", availableRooms:"Ɗakuna Akwai",
-    roomSize:"Girman Ɗaki", maxGuests:"Mafi Yawan Baƙi", level:"Daki", amenities:"Kayan Aiki",
-    backBtn:"← Koma", viewAll:"Duba Duk →", viewRooms:"Duba Ɗakuna →",
-    partnerHotels:"Otal Haɗin Gwiwa", ourNetwork:"Hanyarmu",
-    bookingManagement:"Sarrafa Ajali", dashboard:"Allon Sarrafa",
-    totalBookings:"Jimillar Ajali", availableRoomsLabel:"Ɗakuna Akwai",
-    popularDestinations:"Wurare Shahararru", scrollDown:"Zuba",
-    howItWorks:"Yadda Amarya Ke Aiki", simpleProcess:"Sauƙaƙen Tsari",
-    featuredRooms:"Manyan Ɗakuna Yau", featured:"Zaɓaɓɓe",
-    forHotelOwners:"Don Masu Otal", listYourHotel:"Sanya Oталinka a Amarya",
-    confirmBooking:"Tabbatar", cancelBooking:"Soke",
-    searchingHotels:"BINCIKE...", noHotelsFound:"Babu Otal",
-    tryAnotherCity:"Gwada wani gari.",
-    roomsFound:"ɗakuna an samu", worldwide:"duniya baki ɗaya", in:"a",
-    nightsStayed:"Ya zauna", poor:"Mara kyau", fair:"Matsakaici", good:"Kyau",
-    veryGood:"Kyau Ƙwarai", excellent:"Fitaccen",
-    hotelMap:"Taswirar Otal", hotelsOnMap:"Otal a Taswira",
-    showingHotels:"Nuna", hotels2:"otal", clickPin:"danna don cikakkun bayanai",
-    searchCity:"NEMI GARI DON GANIN OTAL",
-    googleMaps:"Google Maps ↗", enquire:"Tambaya",
-    getInTouch:"Tuntube Mu", contactUs:"Tuntube Mu",
-    ourStory:"Labarin Mu", aboutAmarya:"Game da Amarya",
-    guestExperiences:"Kwarewar Baƙi",
-  },
+  en: { search:"Search", checkIn:"Check In", checkOut:"Check Out", guests:"Guests", bookNow:"Book Now", available:"Available", occupied:"Occupied", from:"From", perNight:"/ night", reserve:"Reserve", hotels:"Hotels", experiences:"Experiences", about:"About", contact:"Contact", admin:"Admin", listHotel:"List Hotel", nightsLabel:"nights", total:"Total", confirm:"Confirm", processing:"Processing...", home:"Home", bookAnother:"Book Another", unavailable:"Unavailable", destination:"Destination", results:"Search Results" },
+  fr: { search:"Rechercher", checkIn:"Arrivée", checkOut:"Départ", guests:"Voyageurs", bookNow:"Réserver", available:"Disponible", occupied:"Occupé", from:"À partir de", perNight:"/ nuit", reserve:"Réserver", hotels:"Hôtels", experiences:"Expériences", about:"À propos", contact:"Contact", admin:"Admin", listHotel:"Ajouter Hôtel", nightsLabel:"nuits", total:"Total", confirm:"Confirmer", processing:"Traitement...", home:"Accueil", bookAnother:"Autre Réservation", unavailable:"Indisponible", destination:"Destination", results:"Résultats" },
+  es: { search:"Buscar", checkIn:"Llegada", checkOut:"Salida", guests:"Huéspedes", bookNow:"Reservar", available:"Disponible", occupied:"Ocupado", from:"Desde", perNight:"/ noche", reserve:"Reservar", hotels:"Hoteles", experiences:"Experiencias", about:"Sobre", contact:"Contacto", admin:"Admin", listHotel:"Añadir Hotel", nightsLabel:"noches", total:"Total", confirm:"Confirmar", processing:"Procesando...", home:"Inicio", bookAnother:"Otra Reserva", unavailable:"No disponible", destination:"Destino", results:"Resultados" },
+  ar: { search:"بحث", checkIn:"الوصول", checkOut:"المغادرة", guests:"ضيوف", bookNow:"احجز الآن", available:"متاح", occupied:"محجوز", from:"من", perNight:"/ ليلة", reserve:"حجز", hotels:"فنادق", experiences:"تجارب", about:"عن", contact:"اتصل", admin:"إدارة", listHotel:"أضف فندق", nightsLabel:"ليالي", total:"المجموع", confirm:"تأكيد", processing:"جارٍ...", home:"الرئيسية", bookAnother:"حجز آخر", unavailable:"غير متاح", destination:"الوجهة", results:"النتائج" },
+  tw: { search:"Hwehwɛ", checkIn:"Bra Da", checkOut:"Kɔ Da", guests:"Ahɔho", bookNow:"Bɔ Din", available:"Wɔ Hɔ", occupied:"Wɔ Mu", from:"Fi", perNight:"/ anadwo", reserve:"Di Hɔ", hotels:"Ahemfie", experiences:"Nsɛm", about:"Fa Ho", contact:"Frɛ Yɛn", admin:"Admin", listHotel:"Ka Hotel", nightsLabel:"anadwo", total:"Nyinaa", confirm:"Gyedi", processing:"...", home:"Fie", bookAnother:"Bɔ Bio", unavailable:"Nni Hɔ", destination:"Baabi", results:"Nkɔso" },
+  ha: { search:"Nema", checkIn:"Shiga", checkOut:"Fita", guests:"Baƙi", bookNow:"Yi Ajali", available:"Akwai", occupied:"Cike", from:"Daga", perNight:"/ dare", reserve:"Kama", hotels:"Otal", experiences:"Abubuwa", about:"Game Da", contact:"Tuntube", admin:"Admin", listHotel:"Ƙara Otal", nightsLabel:"dare", total:"Jimillar", confirm:"Tabbatar", processing:"...", home:"Gida", bookAnother:"Wani Ajali", unavailable:"Babu", destination:"Wuri", results:"Sakamako" },
 };
 
 // ── GLOBAL STYLES injected once ───────────────────────────
@@ -404,23 +123,11 @@ const GLOBAL_CSS = `
   @media (max-width: 768px) {
     .search-bar-inner { flex-direction: column; }
     .search-divider { display: none; }
-    .search-field { border-bottom: 1px solid rgba(196,160,80,0.12); }
-    .search-field label { padding: 10px 14px 0; font-size: 9px; letter-spacing: 2px; }
-    .search-field input, .search-field select { padding: 5px 14px 10px; font-size: 14px; }
-    .search-btn {
-      width: 100%; padding: 15px 20px; min-width: unset; font-size: 11px;
-      letter-spacing: 3px; border-top: 1px solid rgba(196,160,80,0.2);
-      margin-top: 0;
-    }
+    .search-field { border-bottom: 1px solid rgba(196,160,80,0.15); }
+    .search-field label { padding: 12px 16px 0; }
+    .search-field input, .search-field select { padding: 6px 16px 12px; }
+    .search-btn { width: 100%; padding: 18px; min-width: unset; font-size: 12px; }
     .dest-field { flex: unset !important; }
-
-    /* Date fields side by side on mobile booking form */
-    .booking-dates-grid { grid-template-columns: 1fr 1fr !important; }
-  }
-
-  @media (max-width: 420px) {
-    /* On very small screens, stack dates */
-    .booking-dates-grid { grid-template-columns: 1fr !important; }
   }
 
   /* Grid responsive helpers */
@@ -598,8 +305,7 @@ function RoomCard({ room, onBook, onView, showHotel, formatPrice, t }) {
 }
 
 // ── FOOTER (outside App) ──────────────────────────────────
-function Footer({ onNavigate, t }) {
-  const tl = t || TRANSLATIONS.en;
+function Footer({ onNavigate }) {
   return (
     <footer style={{ background:"#060912", borderTop:"1px solid rgba(196,160,80,0.1)", padding:"60px 5vw 36px" }}>
       <div style={{ maxWidth:1300, margin:"0 auto" }}>
@@ -609,9 +315,9 @@ function Footer({ onNavigate, t }) {
             <p style={{ color:"rgba(255,255,255,0.32)", fontSize:13, lineHeight:1.8, maxWidth:260, marginBottom:20 }}>A luxury hotel booking marketplace. Search, compare and book hotels worldwide.</p>
           </div>
           {[
-            ["Discover",[["Search Hotels","results"],["All Hotels","hotels"],[tl.experiences,"experiences"]]],
-            ["Company",[[tl.about,"about"],["Partner With Us","partner"],[tl.contact,"contact"]]],
-            ["Support",[[tl.contact,"contact"],[tl.contact,"contact"],[tl.contact,"contact"]]],
+            ["Discover",[["Search Hotels","results"],["All Hotels","hotels"],["Experiences","experiences"]]],
+            ["Company",[["About Us","about"],["Partner With Us","partner"],["Contact","contact"]]],
+            ["Support",[["Help Centre","contact"],["Cancellations","contact"],["Press","contact"]]],
           ].map(([title,links]) => (
             <div key={title}>
               <h4 style={{ fontSize:11, letterSpacing:4, color:"#c4a050", textTransform:"uppercase", marginBottom:16 }}>{title}</h4>
@@ -634,15 +340,14 @@ function Footer({ onNavigate, t }) {
 }
 
 // ── SEARCH BAR (outside App) ──────────────────────────────
-function SearchBar({ compact, search, onSearchChange, onDestChange, onSubmit, suggestions, showSuggestions, onSuggestionClick, onDestFocus, onDestBlur, destRef, t }) {
-  const tl = t || TRANSLATIONS.en;
+function SearchBar({ compact, search, onSearchChange, onDestChange, onSubmit, suggestions, showSuggestions, onSuggestionClick, onDestFocus, onDestBlur, destRef }) {
   return (
     <form onSubmit={onSubmit} style={{ background: compact ? "rgba(13,18,32,0.98)" : "rgba(255,255,255,0.08)", backdropFilter:"blur(24px)", border:`1px solid ${compact ? "rgba(196,160,80,0.3)" : "rgba(196,160,80,0.4)"}`, width:"100%", maxWidth: compact ? "100%" : 980, margin:"0 auto", position:"relative" }}>
       <div className="search-bar-inner">
 
         {/* DESTINATION */}
         <div className="search-field dest-field" style={{ flex:2.5, minWidth:0, position:"relative" }}>
-          <label>{tl.destination}</label>
+          <label>Destination</label>
           <input
             ref={destRef}
             type="text"
@@ -655,7 +360,7 @@ function SearchBar({ compact, search, onSearchChange, onDestChange, onSubmit, su
           />
           {showSuggestions && suggestions.length > 0 && (
             <div className="suggestion-drop">
-              <div style={{ padding:"8px 16px 4px", fontSize:10, letterSpacing:3, color:"rgba(196,160,80,0.6)", textTransform:"uppercase" }}>{tl.popularDestinations}</div>
+              <div style={{ padding:"8px 16px 4px", fontSize:10, letterSpacing:3, color:"rgba(196,160,80,0.6)", textTransform:"uppercase" }}>Popular Destinations</div>
               {suggestions.map(s => (
                 <div key={s} className="suggestion-item" onMouseDown={() => onSuggestionClick(s)}>
                   <span style={{ fontSize:15 }}>📍</span>
@@ -670,7 +375,7 @@ function SearchBar({ compact, search, onSearchChange, onDestChange, onSubmit, su
 
         {/* CHECK IN */}
         <div className="search-field" style={{ flex:1.4, minWidth:130 }}>
-          <label>{tl.checkIn}</label>
+          <label>Check In</label>
           <input type="date" value={search.check_in} min={todayStr()} onChange={e => onSearchChange("check_in", e.target.value)} style={{ colorScheme:"dark" }} />
         </div>
 
@@ -678,7 +383,7 @@ function SearchBar({ compact, search, onSearchChange, onDestChange, onSubmit, su
 
         {/* CHECK OUT */}
         <div className="search-field" style={{ flex:1.4, minWidth:130 }}>
-          <label>{tl.checkOut}</label>
+          <label>Check Out</label>
           <input type="date" value={search.check_out} min={search.check_in} onChange={e => onSearchChange("check_out", e.target.value)} style={{ colorScheme:"dark" }} />
         </div>
 
@@ -686,13 +391,13 @@ function SearchBar({ compact, search, onSearchChange, onDestChange, onSubmit, su
 
         {/* GUESTS */}
         <div className="search-field" style={{ flex:1, minWidth:100 }}>
-          <label>{tl.guests}</label>
+          <label>Guests</label>
           <select value={search.guests} onChange={e => onSearchChange("guests", Number(e.target.value))}>
-            {[1,2,3,4,5,6,7,8].map(n => <option key={n} value={n}>{n} {n>1 ? tl.guests : tl.guests}</option>)}
+            {[1,2,3,4,5,6,7,8].map(n => <option key={n} value={n}>{n} Guest{n>1?"s":""}</option>)}
           </select>
         </div>
 
-        <button type="submit" className="search-btn">{tl.search}</button>
+        <button type="submit" className="search-btn">Search</button>
       </div>
     </form>
   );
@@ -723,18 +428,12 @@ function Nav({ page, onNavigate, onFetchRooms, onFetchHotels, search, currency, 
 
       {/* Desktop links */}
       <div className="nav-links">
-        {[
-          [t.search,"results"],
-          [t.hotels,"hotels"],
-          [t.experiences,"experiences"],
-          [t.about,"about"],
-          [t.contact,"contact"],
-        ].concat(user?.email==="kellysyder753@gmail.com"?[[t.admin,"admin"]]:[]).map(([label,pg]) => (
+        {[["Search","results"],[t.hotels,"hotels"],[t.experiences,"experiences"],[t.about,"about"],[t.contact,"contact"]].concat(user?.email==="kellysyder753@gmail.com"?[[t.admin,"admin"]]:[]).map(([label,pg]) => (
           <span key={pg} onClick={() => go(pg)} style={{ cursor:"pointer", fontSize:11, letterSpacing:1.5, textTransform:"uppercase", color:page===pg?"#c4a050":"rgba(255,255,255,0.6)", fontFamily:"'Cormorant Garamond',Georgia,serif", fontWeight:600, transition:"color 0.2s", paddingBottom:2, borderBottom:page===pg?"1px solid #c4a050":"1px solid transparent" }}>{label}</span>
         ))}
       </div>
 
-      {/* Right side */}
+      {/* Right side — currency + language + buttons */}
       <div style={{ display:"flex", alignItems:"center", gap:6 }}>
 
         {/* CURRENCY SWITCHER */}
@@ -797,7 +496,7 @@ function Nav({ page, onNavigate, onFetchRooms, onFetchHotels, search, currency, 
               </div>
             </div>
           ) : (
-            <button onClick={() => go("auth")} className="btn-gold" style={{ fontSize:11, letterSpacing:2, padding:"9px 20px" }}>{t.signIn}</button>
+            <button onClick={() => go("auth")} className="btn-gold" style={{ fontSize:11, letterSpacing:2, padding:"9px 20px" }}>Sign In</button>
           )}
           <button onClick={() => { go("map"); }} style={{ background:"rgba(255,255,255,0.06)", border:"1px solid rgba(196,160,80,0.25)", color:"rgba(255,255,255,0.8)", padding:"8px 14px", fontSize:14, cursor:"pointer" }}>🗺️</button>
         </div>
@@ -811,14 +510,7 @@ function Nav({ page, onNavigate, onFetchRooms, onFetchHotels, search, currency, 
       {/* Mobile dropdown */}
       {menuOpen && (
         <div style={{ position:"fixed", top:70, left:0, right:0, background:"rgba(6,9,18,0.99)", borderBottom:"1px solid rgba(196,160,80,0.2)", padding:"24px 5vw 32px", zIndex:998, display:"flex", flexDirection:"column", gap:16 }}>
-          {[
-            [t.search,"results"],
-            [t.hotels,"hotels"],
-            [t.experiences,"experiences"],
-            [t.about,"about"],
-            [t.contact,"contact"],
-            [t.listHotel,"partner"],
-          ].concat(user?.email==="kellysyder753@gmail.com"?[[t.admin,"admin"]]:[]).map(([label,pg]) => (
+          {[["Search","results"],[t.hotels,"hotels"],[t.experiences,"experiences"],[t.about,"about"],[t.contact,"contact"],[t.listHotel,"partner"]].concat(user?.email==="kellysyder753@gmail.com"?[[t.admin,"admin"]]:[]).map(([label,pg]) => (
             <span key={pg} onClick={() => go(pg)} style={{ cursor:"pointer", fontSize:15, letterSpacing:2, textTransform:"uppercase", color:page===pg?"#c4a050":"rgba(255,255,255,0.7)", fontFamily:"'Cormorant Garamond',Georgia,serif", paddingBottom:12, borderBottom:"1px solid rgba(255,255,255,0.05)" }}>{label}</span>
           ))}
           {/* Mobile currency + language */}
@@ -924,6 +616,7 @@ export default function App() {
   // ── MAP ───────────────────────────────────────────────
   const [mapHotels, setMapHotels] = useState([]);
   const [mapSelected, setMapSelected] = useState(null);
+  const [showMap, setShowMap] = useState(false);
   const fetchMapHotels = async (q) => {
     try { const res = await axios.get(API + '/api/map/hotels', { params: { q } }); setMapHotels(res.data); } catch {}
   };
@@ -934,6 +627,7 @@ export default function App() {
   const t = TRANSLATIONS[language] || TRANSLATIONS.en;
   const currObj = CURRENCIES.find(c => c.code === currency) || CURRENCIES[0];
 
+  // Convert price from GHS to selected currency
   const formatPrice = (ghsPrice) => {
     const converted = ghsPrice * currObj.rate;
     const formatted = converted >= 1000
@@ -1066,9 +760,11 @@ export default function App() {
     e.preventDefault(); setSubmitting(true);
     const nights = nightsBetween(booking.check_in, booking.check_out);
     const total = selectedRoom.price * nights;
+    // Show confirmation instantly — dont make user wait
     setConfirmation({ booking_id:'pending', hotel_name:selectedRoom.hotel_name, total_price:total, nights, room:selectedRoom, booking:{...booking} });
     navigate("confirmation");
     setSubmitting(false);
+    // Save to server in background
     try {
       const res = await axios.post(API+"/api/bookings", { ...booking, room_id: selectedRoom.id });
       setConfirmation(prev => ({ ...prev, ...res.data, room:selectedRoom, booking:{...booking} }));
@@ -1082,17 +778,17 @@ export default function App() {
     catch { alert("Failed to cancel."); }
   };
 
-  const handleContactSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      await axios.post(`${API}/api/contact`, contactForm);
-      setContactSent(true);
-      setTimeout(() => setContactSent(false), 4000);
-      setContactForm({ name:"", email:"", subject:"", message:"" });
-    } catch (err) {
-      alert("Failed to send message. Please try again.");
-    }
-  };
+ const handleContactSubmit = async (e) => {
+  e.preventDefault();
+  try {
+    await axios.post(`${API}/api/contact`, contactForm);
+    setContactSent(true);
+    setTimeout(() => setContactSent(false), 4000);
+    setContactForm({ name:"", email:"", subject:"", message:"" });
+  } catch (err) {
+    alert("Failed to send message. Please try again.");
+  }
+};
 
   const handleApplySubmit = async (e) => {
     e.preventDefault();
@@ -1109,6 +805,7 @@ export default function App() {
     window.history.pushState({ page: pg }, '', '/' + pg);
   };
 
+  // Back button handler — stays forever
   useEffect(() => {
     const handleBack = (e) => {
       const pg = e.state?.page || 'home';
@@ -1116,10 +813,10 @@ export default function App() {
       window.scrollTo(0, 0);
     };
     window.addEventListener('popstate', handleBack);
+    // Set initial history state
     window.history.replaceState({ page: 'home' }, '', '/home');
     return () => window.removeEventListener('popstate', handleBack);
   }, []);
-
   const nights = nightsBetween(booking.check_in, booking.check_out);
 
   // ── SHARED SEARCH BAR PROPS ────────────────────────────
@@ -1127,7 +824,7 @@ export default function App() {
     search, onSearchChange: handleSearchChange, onDestChange: handleDestChange,
     onSubmit: handleSearch, suggestions, showSuggestions,
     onSuggestionClick: handleSuggestionClick, onDestFocus: handleDestFocus,
-    onDestBlur: handleDestBlur, destRef, t,
+    onDestBlur: handleDestBlur, destRef,
   };
 
   // ── PAGES ──────────────────────────────────────────────
@@ -1154,7 +851,7 @@ export default function App() {
           </div>
         </div>
         <div style={{ position:"absolute", bottom:36, left:"50%", transform:"translateX(-50%)", display:"flex", flexDirection:"column", alignItems:"center", gap:6, opacity:0.35 }}>
-          <span style={{ fontSize:10, letterSpacing:4, color:"#c4a050", textTransform:"uppercase" }}>{t.scrollDown}</span>
+          <span style={{ fontSize:10, letterSpacing:4, color:"#c4a050", textTransform:"uppercase" }}>Scroll</span>
           <div style={{ width:1, height:44, background:"linear-gradient(to bottom,#c4a050,transparent)" }} />
         </div>
       </section>
@@ -1171,15 +868,10 @@ export default function App() {
       {/* HOW IT WORKS */}
       <section style={{ background:"#080c17", padding:"80px 5vw" }}>
         <div style={{ maxWidth:1200, margin:"0 auto" }}>
-          <p style={{ fontSize:11, letterSpacing:6, color:"#c4a050", textTransform:"uppercase", marginBottom:12, textAlign:"center" }}>{t.simpleProcess}</p>
-          <h2 className="section-title" style={{ textAlign:"center", marginBottom:52 }}>{t.howItWorks}</h2>
+          <p style={{ fontSize:11, letterSpacing:6, color:"#c4a050", textTransform:"uppercase", marginBottom:12, textAlign:"center" }}>Simple Process</p>
+          <h2 className="section-title" style={{ textAlign:"center", marginBottom:52 }}>How <em style={{ color:"#c4a050" }}>Amarya Works</em></h2>
           <div className="how-grid">
-            {[
-              ["🔍","Search Any City","Type your destination and we search all partner hotels in that city — just like Booking.com."],
-              ["🏨","Compare Hotels","Browse rooms across multiple hotels. See real prices, real availability, real locations."],
-              ["✅","Book Instantly","Complete your booking in seconds. Your reservation is confirmed immediately."],
-              ["📧","Hotel Notified","The hotel gets an automatic email with all your details. No waiting, no phone calls."]
-            ].map(([icon,title,desc],i) => (
+            {[["🔍","Search Any City","Type your destination and we search all partner hotels in that city — just like Booking.com."],["🏨","Compare Hotels","Browse rooms across multiple hotels. See real prices, real availability, real locations."],["✅","Book Instantly","Complete your booking in seconds. Your reservation is confirmed immediately."],["📧","Hotel Notified","The hotel gets an automatic email with all your details. No waiting, no phone calls."]].map(([icon,title,desc],i) => (
               <div key={title} style={{ textAlign:"center", padding:28, background:"#0d1220", border:"1px solid rgba(196,160,80,0.1)" }}>
                 <div style={{ width:52, height:52, background:"rgba(196,160,80,0.1)", border:"1px solid rgba(196,160,80,0.25)", borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, margin:"0 auto 16px" }}>{icon}</div>
                 <div style={{ fontSize:10, letterSpacing:3, color:"#c4a050", textTransform:"uppercase", marginBottom:8 }}>Step {i+1}</div>
@@ -1196,10 +888,10 @@ export default function App() {
         <div style={{ maxWidth:1300, margin:"0 auto" }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end", marginBottom:48, flexWrap:"wrap", gap:16 }}>
             <div>
-              <p style={{ fontSize:11, letterSpacing:6, color:"#c4a050", textTransform:"uppercase", marginBottom:10 }}>{t.featured}</p>
-              <h2 className="section-title">{t.featuredRooms}</h2>
+              <p style={{ fontSize:11, letterSpacing:6, color:"#c4a050", textTransform:"uppercase", marginBottom:10 }}>Featured</p>
+              <h2 className="section-title">Top <em style={{ color:"#c4a050" }}>Rooms Today</em></h2>
             </div>
-            <button onClick={() => { navigate("results"); fetchRooms(); }} className="btn-ghost">{t.viewAll}</button>
+            <button onClick={() => { navigate("results"); fetchRooms(); }} className="btn-ghost">View All →</button>
           </div>
           <div className="grid-auto-3">
             {rooms.slice(0,6).map(room => <RoomCard key={room.id} room={room} onBook={handleBookRoom} onView={r => { setSelectedRoom(r); navigate("detail"); }} formatPrice={formatPrice} t={t} />)}
@@ -1210,18 +902,18 @@ export default function App() {
       {/* PARTNER CTA */}
       <section style={{ background:"linear-gradient(135deg,#0d1220 0%,#1a1400 100%)", padding:"80px 5vw", borderTop:"1px solid rgba(196,160,80,0.15)" }}>
         <div style={{ maxWidth:800, margin:"0 auto", textAlign:"center" }}>
-          <p style={{ fontSize:11, letterSpacing:6, color:"#c4a050", textTransform:"uppercase", marginBottom:16 }}>{t.forHotelOwners}</p>
-          <h2 className="section-title" style={{ marginBottom:20 }}>{t.listYourHotel}</h2>
+          <p style={{ fontSize:11, letterSpacing:6, color:"#c4a050", textTransform:"uppercase", marginBottom:16 }}>For Hotel Owners</p>
+          <h2 className="section-title" style={{ marginBottom:20 }}>List Your Hotel on <em style={{ color:"#c4a050" }}>Amarya</em></h2>
           <p style={{ color:"rgba(255,255,255,0.55)", fontSize:16, lineHeight:1.8, fontFamily:"'Cormorant Garamond',Georgia,serif", marginBottom:36 }}>Reach luxury travellers worldwide. Receive instant booking notifications. Keep 90% of every booking.</p>
           <div style={{ display:"flex", gap:16, justifyContent:"center", flexWrap:"wrap", marginBottom:36 }}>
             {[["✅","No setup fee"],["📧","Instant notifications"],["💰","90% payout"],["🌍","Global reach"]].map(([icon,text]) => (
               <div key={text} style={{ display:"flex", alignItems:"center", gap:8, fontSize:14, color:"rgba(255,255,255,0.65)" }}><span>{icon}</span>{text}</div>
             ))}
           </div>
-          <button onClick={() => navigate("partner")} className="btn-gold" style={{ fontSize:12, letterSpacing:4, padding:"16px 40px" }}>{t.partnerWith} →</button>
+          <button onClick={() => navigate("partner")} className="btn-gold" style={{ fontSize:12, letterSpacing:4, padding:"16px 40px" }}>Partner With Us →</button>
         </div>
       </section>
-      <Footer onNavigate={navigate} t={t} />
+      <Footer onNavigate={navigate} />
     </div>
   );
 
@@ -1232,20 +924,20 @@ export default function App() {
         <div style={{ maxWidth:1300, margin:"0 auto" }}>
           <SearchBar compact {...searchBarProps} />
           <p style={{ color:"rgba(255,255,255,0.4)", fontSize:13, marginTop:14 }}>
-            {loading ? t.searchingHotels : `${rooms.length} ${t.roomsFound}${search.destination ? ` ${t.in} "${search.destination}"` : ` ${t.worldwide}`}`}
+            {loading ? "Searching..." : `${rooms.length} room${rooms.length!==1?"s":""} found${search.destination ? ` in "${search.destination}"` : " worldwide"}`}
           </p>
         </div>
       </div>
       <div style={{ maxWidth:1300, margin:"0 auto", padding:"44px 5vw" }}>
         {loading ? (
-          <div style={{ textAlign:"center", padding:80, color:"rgba(255,255,255,0.3)", letterSpacing:4 }}>{t.searchingHotels}</div>
+          <div style={{ textAlign:"center", padding:80, color:"rgba(255,255,255,0.3)", letterSpacing:4 }}>SEARCHING HOTELS...</div>
         ) : error ? (
           <div style={{ textAlign:"center", padding:80, color:"#ff6b6b" }}>⚠ {error}</div>
         ) : rooms.length === 0 ? (
           <div style={{ textAlign:"center", padding:80 }}>
             <div style={{ fontSize:48, marginBottom:16 }}>🏨</div>
-            <div style={{ color:"rgba(255,255,255,0.4)", fontSize:15, marginBottom:8 }}>{t.noHotelsFound} {search.destination ? `${t.in} "${search.destination}"` : ""}</div>
-            <div style={{ color:"rgba(255,255,255,0.25)", fontSize:13 }}>{t.tryAnotherCity}</div>
+            <div style={{ color:"rgba(255,255,255,0.4)", fontSize:15, marginBottom:8 }}>No hotels found {search.destination ? `in "${search.destination}"` : ""}</div>
+            <div style={{ color:"rgba(255,255,255,0.25)", fontSize:13 }}>Try another city or check back later as more hotels join Amarya.</div>
           </div>
         ) : (
           <div className="grid-auto-3">
@@ -1253,7 +945,7 @@ export default function App() {
           </div>
         )}
       </div>
-      <Footer onNavigate={navigate} t={t} />
+      <Footer onNavigate={navigate} />
     </div>
   );
 
@@ -1262,8 +954,8 @@ export default function App() {
     <div style={{ paddingTop:70, background:"#080c17", minHeight:"100vh" }}>
       <div style={{ background:"#0d1220", padding:"70px 5vw 50px", borderBottom:"1px solid rgba(196,160,80,0.1)" }}>
         <div style={{ maxWidth:1200, margin:"0 auto" }}>
-          <p style={{ fontSize:11, letterSpacing:6, color:"#c4a050", textTransform:"uppercase", marginBottom:10 }}>{t.ourNetwork}</p>
-          <h1 className="page-title">{t.partnerHotels}</h1>
+          <p style={{ fontSize:11, letterSpacing:6, color:"#c4a050", textTransform:"uppercase", marginBottom:10 }}>Our Network</p>
+          <h1 className="page-title">Partner <em style={{ color:"#c4a050" }}>Hotels</em></h1>
         </div>
       </div>
       <div style={{ maxWidth:1200, margin:"0 auto", padding:"52px 5vw" }}>
@@ -1281,14 +973,14 @@ export default function App() {
                 <p style={{ color:"rgba(255,255,255,0.45)", fontSize:13, lineHeight:1.6, marginBottom:14, display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden" }}>{hotel.description}</p>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", borderTop:"1px solid rgba(255,255,255,0.06)", paddingTop:12 }}>
                   <span style={{ fontSize:12, color:"rgba(255,255,255,0.35)" }}>{hotel.city}, {hotel.country}</span>
-                  <span style={{ fontSize:13, color:"#c4a050", fontWeight:700 }}>{t.viewRooms}</span>
+                  <span style={{ fontSize:13, color:"#c4a050", fontWeight:700 }}>View Rooms →</span>
                 </div>
               </div>
             </div>
           ))}
         </div>
       </div>
-      <Footer onNavigate={navigate} t={t} />
+      <Footer onNavigate={navigate} />
     </div>
   );
 
@@ -1296,7 +988,6 @@ export default function App() {
   const renderHotel = () => {
     if (!selectedHotel) return null;
     const amenities = selectedHotel.amenities ? selectedHotel.amenities.split(",") : [];
-    const ratingLabels = ["", t.poor, t.fair, t.good, t.veryGood, t.excellent];
     return (
       <div style={{ paddingTop:70, background:"#080c17", minHeight:"100vh" }}>
         <div style={{ position:"relative", height:"45vh", overflow:"hidden" }}>
@@ -1313,7 +1004,7 @@ export default function App() {
           <div style={{ display:"flex", gap:10, flexWrap:"wrap", marginBottom:44 }}>
             {amenities.map(a => <span key={a} className="amenity-tag">{AMENITY_ICONS[a.trim()]||"✦"} {a.trim()}</span>)}
           </div>
-          <h2 style={{ fontFamily:"'Playfair Display',Georgia,serif", fontSize:30, fontWeight:300, color:"#fff", margin:"0 0 24px" }}>{t.availableRooms}</h2>
+          <h2 style={{ fontFamily:"'Playfair Display',Georgia,serif", fontSize:30, fontWeight:300, color:"#fff", margin:"0 0 24px" }}>Available <em style={{ color:"#c4a050" }}>Rooms</em></h2>
           <div className="grid-auto-3">
             {(selectedHotel.rooms||[]).map(room => (
               <RoomCard key={room.id} room={{ ...room, hotel_name:selectedHotel.name, city:selectedHotel.city, country:selectedHotel.country }} onBook={handleBookRoom} onView={r => { setSelectedRoom(r); navigate("detail"); }} formatPrice={formatPrice} t={t} />
@@ -1322,8 +1013,9 @@ export default function App() {
 
           {/* ── REVIEWS SECTION ── */}
           <div style={{ marginTop:64, borderTop:"1px solid rgba(196,160,80,0.15)", paddingTop:48 }}>
-            <h2 style={{ fontFamily:"'Playfair Display',Georgia,serif", fontSize:30, fontWeight:300, color:"#fff", margin:"0 0 8px" }}>{t.guestReviews}</h2>
+            <h2 style={{ fontFamily:"'Playfair Display',Georgia,serif", fontSize:30, fontWeight:300, color:"#fff", margin:"0 0 8px" }}>Guest <em style={{ color:"#c4a050" }}>Reviews</em></h2>
 
+            {/* Rating summary */}
             {hotelRating && hotelRating.total > 0 && (
               <div style={{ display:"flex", alignItems:"center", gap:24, marginBottom:32, flexWrap:"wrap" }}>
                 <div style={{ textAlign:"center" }}>
@@ -1346,6 +1038,7 @@ export default function App() {
               </div>
             )}
 
+            {/* Review list */}
             {reviews.length > 0 ? (
               <div style={{ display:"flex", flexDirection:"column", gap:16, marginBottom:40 }}>
                 {reviews.map(r => (
@@ -1353,7 +1046,7 @@ export default function App() {
                     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:8, flexWrap:"wrap", gap:8 }}>
                       <div>
                         <span style={{ fontSize:14, color:"#e8d5a0", fontWeight:600 }}>{r.guest_name}</span>
-                        {r.stay_date && <span style={{ fontSize:11, color:"rgba(255,255,255,0.3)", marginLeft:10 }}>{t.nightsStayed} {r.stay_date}</span>}
+                        {r.stay_date && <span style={{ fontSize:11, color:"rgba(255,255,255,0.3)", marginLeft:10 }}>Stayed {r.stay_date}</span>}
                       </div>
                       <span style={{ color:"#c4a050", fontSize:14 }}>{"★".repeat(r.rating)}{"☆".repeat(5-r.rating)}</span>
                     </div>
@@ -1362,40 +1055,40 @@ export default function App() {
                 ))}
               </div>
             ) : (
-              <p style={{ color:"rgba(255,255,255,0.3)", fontSize:14, marginBottom:32, letterSpacing:1 }}>{t.noReviews}</p>
+              <p style={{ color:"rgba(255,255,255,0.3)", fontSize:14, marginBottom:32, letterSpacing:1 }}>No reviews yet — be the first to review this hotel.</p>
             )}
 
             {/* Write a review */}
             <div style={{ background:"#0d1220", border:"1px solid rgba(196,160,80,0.2)", padding:28 }}>
-              <h3 style={{ fontFamily:"'Playfair Display',Georgia,serif", fontSize:20, fontWeight:300, color:"#fff", margin:"0 0 20px" }}>{t.writeReview}</h3>
-              {reviewSent && <div style={{ background:"rgba(196,160,80,0.1)", border:"1px solid rgba(196,160,80,0.4)", color:"#c4a050", padding:12, marginBottom:16, textAlign:"center", fontSize:14 }}>✓ {t.thankYouReview}</div>}
+              <h3 style={{ fontFamily:"'Playfair Display',Georgia,serif", fontSize:20, fontWeight:300, color:"#fff", margin:"0 0 20px" }}>Write a <em style={{ color:"#c4a050" }}>Review</em></h3>
+              {reviewSent && <div style={{ background:"rgba(196,160,80,0.1)", border:"1px solid rgba(196,160,80,0.4)", color:"#c4a050", padding:12, marginBottom:16, textAlign:"center", fontSize:14 }}>✓ Thank you for your review!</div>}
               <div style={{ marginBottom:14 }}>
-                <label className="form-label">{t.yourName} *</label>
-                <input className="amarya-input" value={reviewForm.guest_name} onChange={e=>setReviewForm(f=>({...f,guest_name:e.target.value}))} placeholder={t.yourName} />
+                <label className="form-label">Your Name *</label>
+                <input className="amarya-input" value={reviewForm.guest_name} onChange={e=>setReviewForm(f=>({...f,guest_name:e.target.value}))} placeholder="Your name" />
               </div>
               <div style={{ marginBottom:14 }}>
-                <label className="form-label">{t.rating} *</label>
+                <label className="form-label">Rating *</label>
                 <div style={{ display:"flex", gap:8, marginTop:6 }}>
                   {[1,2,3,4,5].map(n => (
                     <button key={n} type="button" onClick={()=>setReviewForm(f=>({...f,rating:n}))}
                       style={{ width:40, height:40, background:reviewForm.rating>=n?"rgba(196,160,80,0.2)":"rgba(255,255,255,0.04)", border:`1px solid ${reviewForm.rating>=n?"#c4a050":"rgba(255,255,255,0.1)"}`, color:reviewForm.rating>=n?"#c4a050":"rgba(255,255,255,0.3)", fontSize:18, cursor:"pointer" }}>★</button>
                   ))}
-                  <span style={{ alignSelf:"center", fontSize:13, color:"rgba(255,255,255,0.4)", marginLeft:8 }}>{ratingLabels[reviewForm.rating]}</span>
+                  <span style={{ alignSelf:"center", fontSize:13, color:"rgba(255,255,255,0.4)", marginLeft:8 }}>{["","Poor","Fair","Good","Very Good","Excellent"][reviewForm.rating]}</span>
                 </div>
               </div>
               <div style={{ marginBottom:14 }}>
-                <label className="form-label">{t.whenDidYouStay}</label>
+                <label className="form-label">When did you stay?</label>
                 <input className="amarya-input" placeholder="e.g. January 2026" value={reviewForm.stay_date} onChange={e=>setReviewForm(f=>({...f,stay_date:e.target.value}))} />
               </div>
               <div style={{ marginBottom:20 }}>
-                <label className="form-label">{t.yourReview}</label>
-                <textarea className="amarya-input" rows={4} style={{ resize:"vertical" }} placeholder={t.shareExperience} value={reviewForm.comment} onChange={e=>setReviewForm(f=>({...f,comment:e.target.value}))} />
+                <label className="form-label">Your Review</label>
+                <textarea className="amarya-input" rows={4} style={{ resize:"vertical" }} placeholder="Share your experience at this hotel..." value={reviewForm.comment} onChange={e=>setReviewForm(f=>({...f,comment:e.target.value}))} />
               </div>
-              <button className="btn-gold" style={{ padding:"13px 32px", fontSize:11, letterSpacing:3 }} onClick={()=>handleReviewSubmit(selectedHotel.id)}>{t.submitReview}</button>
+              <button className="btn-gold" style={{ padding:"13px 32px", fontSize:11, letterSpacing:3 }} onClick={()=>handleReviewSubmit(selectedHotel.id)}>Submit Review</button>
             </div>
           </div>
         </div>
-        <Footer onNavigate={navigate} t={t} />
+        <Footer onNavigate={navigate} />
       </div>
     );
   };
@@ -1421,14 +1114,14 @@ export default function App() {
             <div>
               <p style={{ color:"rgba(255,255,255,0.65)", lineHeight:1.9, fontSize:16, fontFamily:"'Cormorant Garamond',Georgia,serif", marginBottom:28 }}>{selectedRoom.description}</p>
               <div style={{ display:"flex", gap:14, marginBottom:28, flexWrap:"wrap" }}>
-                {[[selectedRoom.size_sqm&&`${selectedRoom.size_sqm}m²`,t.roomSize],[selectedRoom.capacity&&selectedRoom.capacity,t.maxGuests],[selectedRoom.floor&&`Floor ${selectedRoom.floor}`,t.level]].filter(([v])=>v).map(([val,label]) => (
+                {[[selectedRoom.size_sqm&&`${selectedRoom.size_sqm}m²`,"Room Size"],[selectedRoom.capacity&&selectedRoom.capacity,"Max Guests"],[selectedRoom.floor&&`Floor ${selectedRoom.floor}`,"Level"]].filter(([v])=>v).map(([val,label]) => (
                   <div key={label} style={{ textAlign:"center", background:"rgba(196,160,80,0.06)", border:"1px solid rgba(196,160,80,0.15)", padding:"12px 20px" }}>
                     <div style={{ fontSize:20, color:"#c4a050", fontWeight:700 }}>{val}</div>
                     <div style={{ fontSize:10, letterSpacing:2, color:"rgba(255,255,255,0.4)", textTransform:"uppercase", marginTop:3 }}>{label}</div>
                   </div>
                 ))}
               </div>
-              <h3 style={{ fontSize:11, letterSpacing:4, color:"#c4a050", textTransform:"uppercase", marginBottom:12 }}>{t.amenities}</h3>
+              <h3 style={{ fontSize:11, letterSpacing:4, color:"#c4a050", textTransform:"uppercase", marginBottom:12 }}>Amenities</h3>
               <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
                 {amenities.map(a => <span key={a} className="amenity-tag">{AMENITY_ICONS[a.trim()]||"✦"} {a.trim()}</span>)}
               </div>
@@ -1436,31 +1129,31 @@ export default function App() {
             {/* Booking sidebar */}
             <div className="sticky-sidebar" style={{ background:"#0d1220", border:"1px solid rgba(196,160,80,0.2)", padding:28 }}>
               <div style={{ marginBottom:12 }}>
-                <span style={{ fontSize:11, letterSpacing:2, color:"rgba(255,255,255,0.4)", textTransform:"uppercase" }}>{t.from}</span>
+                <span style={{ fontSize:11, letterSpacing:2, color:"rgba(255,255,255,0.4)", textTransform:"uppercase" }}>From</span>
                 <div style={{ fontFamily:"'Playfair Display',Georgia,serif", fontSize:36, color:"#c4a050", lineHeight:1 }}>GHS {Number(selectedRoom.price).toLocaleString()}</div>
-                <span style={{ fontSize:12, color:"rgba(255,255,255,0.3)" }}>{t.perNight}</span>
+                <span style={{ fontSize:12, color:"rgba(255,255,255,0.3)" }}>per night</span>
               </div>
               <div style={{ height:1, background:"rgba(196,160,80,0.15)", margin:"12px 0" }} />
-              {[[t.checkIn,"check_in","date",todayStr()],[t.checkOut,"check_out","date",booking.check_in]].map(([label,field,type,min]) => (
+              {[["Check In","check_in","date",todayStr()],["Check Out","check_out","date",booking.check_in]].map(([label,field,type,min]) => (
                 <div key={field} style={{ marginBottom:12 }}>
                   <label className="form-label">{label}</label>
                   <input type={type} value={booking[field]} min={min} onChange={e => setBooking(b=>({...b,[field]:e.target.value}))} className="amarya-input" style={{ colorScheme:"dark" }} />
                 </div>
               ))}
               <div style={{ marginBottom:14 }}>
-                <label className="form-label">{t.guests}</label>
+                <label className="form-label">Guests</label>
                 <select value={booking.guests} onChange={e=>setBooking(b=>({...b,guests:e.target.value}))} className="amarya-input">
-                  {Array.from({length:selectedRoom.capacity||4},(_,i)=>i+1).map(n=><option key={n} value={n}>{n} {t.guests}</option>)}
+                  {Array.from({length:selectedRoom.capacity||4},(_,i)=>i+1).map(n=><option key={n} value={n}>{n} Guest{n>1?"s":""}</option>)}
                 </select>
               </div>
-              {detNights>0 && <div style={{ background:"rgba(196,160,80,0.06)", border:"1px solid rgba(196,160,80,0.15)", padding:12, marginBottom:12, display:"flex", justifyContent:"space-between" }}><span style={{fontSize:12,color:"rgba(255,255,255,0.5)"}}>{detNights} {t.nightsLabel}</span><span style={{fontSize:14,color:"#c4a050",fontWeight:700}}>GHS {(selectedRoom.price*detNights).toLocaleString()}</span></div>}
+              {detNights>0 && <div style={{ background:"rgba(196,160,80,0.06)", border:"1px solid rgba(196,160,80,0.15)", padding:12, marginBottom:12, display:"flex", justifyContent:"space-between" }}><span style={{fontSize:12,color:"rgba(255,255,255,0.5)"}}>{detNights} nights</span><span style={{fontSize:14,color:"#c4a050",fontWeight:700}}>GHS {(selectedRoom.price*detNights).toLocaleString()}</span></div>}
               <button disabled={selectedRoom.status!=="available"} onClick={()=>handleBookRoom(selectedRoom)} className="btn-gold" style={{ width:"100%", padding:15, opacity:selectedRoom.status!=="available"?0.4:1, cursor:selectedRoom.status!=="available"?"not-allowed":"pointer" }}>
-                {selectedRoom.status==="available" ? t.reserve : t.unavailable}
+                {selectedRoom.status==="available"?"Reserve This Room":"Unavailable"}
               </button>
             </div>
           </div>
         </div>
-        <Footer onNavigate={navigate} t={t} />
+        <Footer onNavigate={navigate} />
       </div>
     );
   };
@@ -1472,45 +1165,38 @@ export default function App() {
     return (
       <div style={{ paddingTop:70, background:"#080c17", minHeight:"100vh" }}>
         <div style={{ maxWidth:880, margin:"0 auto" }} className="page-pad">
-          <button onClick={() => navigate("results")} style={{ background:"none", border:"none", color:"rgba(255,255,255,0.4)", cursor:"pointer", fontSize:13, letterSpacing:2, marginBottom:28, textTransform:"uppercase" }}>{t.backBtn}</button>
+          <button onClick={() => navigate("results")} style={{ background:"none", border:"none", color:"rgba(255,255,255,0.4)", cursor:"pointer", fontSize:13, letterSpacing:2, marginBottom:28, textTransform:"uppercase" }}>← Back</button>
           <div className="booking-grid">
             <div>
-              <p style={{ fontSize:11, letterSpacing:6, color:"#c4a050", textTransform:"uppercase", marginBottom:8 }}>{t.almostThere}</p>
-              <h1 style={{ fontFamily:"'Playfair Display',Georgia,serif", fontSize:"clamp(28px,4vw,38px)", fontWeight:300, color:"#fff", margin:"0 0 28px" }}>{t.completeReservation}</h1>
+              <p style={{ fontSize:11, letterSpacing:6, color:"#c4a050", textTransform:"uppercase", marginBottom:8 }}>Almost There</p>
+              <h1 style={{ fontFamily:"'Playfair Display',Georgia,serif", fontSize:"clamp(28px,4vw,38px)", fontWeight:300, color:"#fff", margin:"0 0 28px" }}>Complete Your<br /><em style={{color:"#c4a050"}}>Reservation</em></h1>
               <form onSubmit={handleSubmitBooking}>
-                {[
-                  ["customer_name", t.fullName, "text", true],
-                  ["customer_email", t.emailAddress, "email", true],
-                  ["customer_phone", t.phoneNumber, "tel", false],
-                ].map(([name,label,type,req]) => (
+                {[["customer_name","Full Name","text",true],["customer_email","Email Address","email",true],["customer_phone","Phone Number","tel",false]].map(([name,label,type,req]) => (
                   <div key={name} style={{marginBottom:14}}>
                     <label className="form-label">{label}{req?" *":""}</label>
                     <input type={type} required={req} value={booking[name]} onChange={e=>setBooking(b=>({...b,[name]:e.target.value}))} className="amarya-input" />
                   </div>
                 ))}
-
-                {/* FIX: date fields use auto-fit so they sit side-by-side on mobile without crowding */}
-                <div className="booking-dates-grid" style={{display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(140px, 1fr))", gap:14, marginBottom:14}}>
-                  {[[t.arrival,"check_in",todayStr()],[t.departure,"check_out",booking.check_in]].map(([label,name,min]) => (
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>
+                  {[["check_in","Arrival",todayStr()],["check_out","Departure",booking.check_in]].map(([name,label,min]) => (
                     <div key={name}>
                       <label className="form-label">{label} *</label>
                       <input type="date" required value={booking[name]} min={min} onChange={e=>setBooking(b=>({...b,[name]:e.target.value}))} className="amarya-input" style={{colorScheme:"dark"}} />
                     </div>
                   ))}
                 </div>
-
                 <div style={{marginBottom:14}}>
-                  <label className="form-label">{t.guests}</label>
+                  <label className="form-label">Guests</label>
                   <select value={booking.guests} onChange={e=>setBooking(b=>({...b,guests:e.target.value}))} className="amarya-input">
-                    {Array.from({length:selectedRoom.capacity||4},(_,i)=>i+1).map(n=><option key={n} value={n}>{n} {t.guests}</option>)}
+                    {Array.from({length:selectedRoom.capacity||4},(_,i)=>i+1).map(n=><option key={n} value={n}>{n} Guest{n>1?"s":""}</option>)}
                   </select>
                 </div>
                 <div style={{marginBottom:24}}>
-                  <label className="form-label">{t.specialRequests}</label>
-                  <textarea rows={3} value={booking.special_requests} onChange={e=>setBooking(b=>({...b,special_requests:e.target.value}))} placeholder={t.specialRequestsPlaceholder} className="amarya-input" style={{resize:"vertical"}} />
+                  <label className="form-label">Special Requests</label>
+                  <textarea rows={3} value={booking.special_requests} onChange={e=>setBooking(b=>({...b,special_requests:e.target.value}))} placeholder="Early check-in, dietary needs, celebrations..." className="amarya-input" style={{resize:"vertical"}} />
                 </div>
                 <button type="submit" disabled={submitting||nights===0} className="btn-gold" style={{width:"100%",padding:16,fontSize:12,letterSpacing:4,opacity:submitting||nights===0?0.5:1,cursor:submitting||nights===0?"not-allowed":"pointer"}}>
-                  {submitting ? t.processing : `${t.confirm} — GHS ${total>0?total.toLocaleString():"..."}`}
+                  {submitting ? "Processing..." : `Confirm — GHS ${total>0?total.toLocaleString():"..."}`}
                 </button>
               </form>
             </div>
@@ -1522,7 +1208,7 @@ export default function App() {
                 <div style={{fontSize:10,letterSpacing:2,color:"#c4a050",textTransform:"uppercase",marginBottom:3}}>Room {selectedRoom.room_number}</div>
                 <div style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:17,color:"#fff",marginBottom:12}}>{selectedRoom.type}</div>
                 <div style={{height:1,background:"rgba(196,160,80,0.15)",margin:"8px 0"}} />
-                {[[t.checkIn,booking.check_in||"—"],[t.checkOut,booking.check_out||"—"],[t.guests,booking.guests],[t.nightsLabel,nights||"—"]].map(([l,v]) => (
+                {[["Check In",booking.check_in||"—"],["Check Out",booking.check_out||"—"],["Guests",booking.guests],["Nights",nights||"—"]].map(([l,v]) => (
                   <div key={l} style={{display:"flex",justifyContent:"space-between",marginBottom:7}}>
                     <span style={{fontSize:12,color:"rgba(255,255,255,0.4)"}}>{l}</span>
                     <span style={{fontSize:13,color:"#e8d5a0"}}>{v}</span>
@@ -1530,7 +1216,7 @@ export default function App() {
                 ))}
                 <div style={{height:1,background:"rgba(196,160,80,0.15)",margin:"8px 0"}} />
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  <span style={{fontSize:12,color:"rgba(255,255,255,0.4)"}}>{t.total}</span>
+                  <span style={{fontSize:12,color:"rgba(255,255,255,0.4)"}}>Total</span>
                   <span style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:20,color:"#c4a050"}}>GHS {nights>0?total.toLocaleString():"—"}</span>
                 </div>
               </div>
@@ -1548,20 +1234,13 @@ export default function App() {
       <div style={{paddingTop:70,background:"#080c17",minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center"}}>
         <div style={{textAlign:"center",maxWidth:560,padding:"60px 24px"}}>
           <div style={{width:70,height:70,border:"2px solid #c4a050",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 22px",fontSize:28}}>✓</div>
-          <p style={{fontSize:11,letterSpacing:6,color:"#c4a050",textTransform:"uppercase",marginBottom:10}}>{t.bookingConfirmed}</p>
+          <p style={{fontSize:11,letterSpacing:6,color:"#c4a050",textTransform:"uppercase",marginBottom:10}}>Booking Confirmed</p>
           <h1 style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:"clamp(32px,5vw,46px)",fontWeight:300,color:"#fff",margin:"0 0 12px"}}>Welcome to<br /><em style={{color:"#c4a050"}}>Amarya</em></h1>
           <p style={{color:"rgba(255,255,255,0.5)",fontSize:14,marginBottom:12,lineHeight:1.8,fontFamily:"'Cormorant Garamond',Georgia,serif"}}>Your booking is confirmed and <span style={{color:"#c4a050"}}>{confirmation.hotel_name}</span> has been automatically notified.</p>
           <p style={{color:"rgba(255,255,255,0.4)",fontSize:13,marginBottom:28}}>Confirmation sent to {confirmation.booking.customer_email}</p>
           <div style={{background:"#0d1220",border:"1px solid rgba(196,160,80,0.2)",padding:24,marginBottom:24,textAlign:"left"}}>
             <div style={{fontSize:10,letterSpacing:3,color:"#c4a050",textTransform:"uppercase",marginBottom:12}}>Booking #{confirmation.booking_id}</div>
-            {[
-              ["Room",`${confirmation.room.type} — #${confirmation.room.room_number}`],
-              ["Hotel",confirmation.hotel_name||"Amarya"],
-              [t.checkIn,confirmation.booking.check_in],
-              [t.checkOut,confirmation.booking.check_out],
-              ["Duration",`${confirmation.nights} ${t.nightsLabel}`],
-              [t.total,"GHS "+Number(confirmation.total_price).toLocaleString()]
-            ].map(([l,v]) => (
+            {[["Room",`${confirmation.room.type} — #${confirmation.room.room_number}`],["Hotel",confirmation.hotel_name||"Amarya"],["Check In",confirmation.booking.check_in],["Check Out",confirmation.booking.check_out],["Duration",`${confirmation.nights} night${confirmation.nights>1?"s":""}`],["Total","GHS "+Number(confirmation.total_price).toLocaleString()]].map(([l,v]) => (
               <div key={l} style={{display:"flex",justifyContent:"space-between",padding:"7px 0",borderBottom:"1px solid rgba(255,255,255,0.05)"}}>
                 <span style={{fontSize:12,color:"rgba(255,255,255,0.4)"}}>{l}</span>
                 <span style={{fontSize:13,color:"#e8d5a0"}}>{v}</span>
@@ -1569,8 +1248,8 @@ export default function App() {
             ))}
           </div>
           <div style={{display:"flex",gap:12,justifyContent:"center",flexWrap:"wrap"}}>
-            <button onClick={()=>{navigate("home");setConfirmation(null);}} className="btn-ghost">{t.home}</button>
-            <button onClick={()=>{navigate("results");fetchRooms(search.destination);setConfirmation(null);}} className="btn-gold">{t.bookAnother}</button>
+            <button onClick={()=>{navigate("home");setConfirmation(null);}} className="btn-ghost">Home</button>
+            <button onClick={()=>{navigate("results");fetchRooms(search.destination);setConfirmation(null);}} className="btn-gold">Book Another</button>
           </div>
         </div>
       </div>
@@ -1582,15 +1261,10 @@ export default function App() {
     <div style={{paddingTop:70,background:"#080c17",minHeight:"100vh"}}>
       <div style={{maxWidth:860,margin:"0 auto"}} className="page-pad">
         <p style={{fontSize:11,letterSpacing:6,color:"#c4a050",textTransform:"uppercase",marginBottom:12}}>Partner Programme</p>
-        <h1 className="page-title" style={{marginBottom:16}}>{t.listYourHotel}</h1>
+        <h1 className="page-title" style={{marginBottom:16}}>List Your Hotel<br /><em style={{color:"#c4a050"}}>On Amarya</em></h1>
         <p style={{color:"rgba(255,255,255,0.55)",fontSize:16,lineHeight:1.8,fontFamily:"'Cormorant Garamond',Georgia,serif",maxWidth:580,marginBottom:44}}>Join our global network. We connect your hotel to luxury travellers worldwide and handle booking management. You receive instant email notifications for every booking.</p>
         <div className="partner-features">
-          {[
-            ["📧","Instant Notifications","Every booking triggers an automatic email to your hotel with full guest details."],
-            ["💰","90% Payout","You keep 90% of every booking. Amarya takes a 10% commission."],
-            ["🌍","Global Reach","Your rooms appear in searches from travellers worldwide."],
-            ["📊","Free Dashboard","Manage bookings and room availability through our admin panel."]
-          ].map(([icon,title,desc]) => (
+          {[["📧","Instant Notifications","Every booking triggers an automatic email to your hotel with full guest details."],["💰","90% Payout","You keep 90% of every booking. Amarya takes a 10% commission."],["🌍","Global Reach","Your rooms appear in searches from travellers worldwide."],["📊","Free Dashboard","Manage bookings and room availability through our admin panel."]].map(([icon,title,desc]) => (
             <div key={title} style={{background:"#0d1220",border:"1px solid rgba(196,160,80,0.1)",padding:22,display:"flex",gap:14,alignItems:"flex-start"}}>
               <span style={{fontSize:20,flexShrink:0}}>{icon}</span>
               <div><div style={{fontSize:14,fontWeight:700,color:"#e8d5a0",marginBottom:4}}>{title}</div><div style={{fontSize:13,color:"rgba(255,255,255,0.45)",lineHeight:1.6}}>{desc}</div></div>
@@ -1600,21 +1274,14 @@ export default function App() {
         {applicationSent ? (
           <div style={{background:"rgba(196,160,80,0.1)",border:"1px solid rgba(196,160,80,0.4)",padding:32,textAlign:"center"}}>
             <div style={{fontSize:36,marginBottom:12}}>✓</div>
-            <h2 style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:24,color:"#c4a050",margin:"0 0 8px"}}>{t.applicationReceived}</h2>
-            <p style={{color:"rgba(255,255,255,0.55)",fontSize:15}}>{t.applicationReview}</p>
+            <h2 style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:24,color:"#c4a050",margin:"0 0 8px"}}>Application Received!</h2>
+            <p style={{color:"rgba(255,255,255,0.55)",fontSize:15}}>We'll review your application and get back to you within 48 hours.</p>
           </div>
         ) : (
           <form onSubmit={handleApplySubmit} style={{background:"#0d1220",border:"1px solid rgba(196,160,80,0.15)",padding:"36px 32px"}}>
-            <h2 style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:24,color:"#fff",margin:"0 0 24px"}}>{t.applyToPartner}</h2>
+            <h2 style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:24,color:"#fff",margin:"0 0 24px"}}>Apply to <em style={{color:"#c4a050"}}>Partner</em></h2>
             <div className="partner-form-grid">
-              {[
-                ["hotel_name","Hotel Name",true],
-                ["contact_name",t.fullName,true],
-                ["city","City",true],
-                ["country","Country",true],
-                ["email",t.emailAddress,true],
-                ["phone",t.phoneNumber,false]
-              ].map(([name,label,req]) => (
+              {[["hotel_name","Hotel Name",true],["contact_name","Your Name",true],["city","City",true],["country","Country",true],["email","Email Address",true],["phone","Phone",false]].map(([name,label,req]) => (
                 <div key={name}>
                   <label className="form-label">{label}{req?" *":""}</label>
                   <input required={req} value={applyForm[name]} onChange={e=>setApplyForm(f=>({...f,[name]:e.target.value}))} className="amarya-input" />
@@ -1625,11 +1292,11 @@ export default function App() {
               <label className="form-label">Tell us about your hotel</label>
               <textarea rows={4} value={applyForm.message} onChange={e=>setApplyForm(f=>({...f,message:e.target.value}))} placeholder="Number of rooms, star rating, location details..." className="amarya-input" style={{resize:"vertical"}} />
             </div>
-            <button type="submit" className="btn-gold" style={{width:"100%",padding:16,fontSize:12,letterSpacing:4}}>{t.submitApplication}</button>
+            <button type="submit" className="btn-gold" style={{width:"100%",padding:16,fontSize:12,letterSpacing:4}}>Submit Application</button>
           </form>
         )}
       </div>
-      <Footer onNavigate={navigate} t={t} />
+      <Footer onNavigate={navigate} />
     </div>
   );
 
@@ -1640,8 +1307,8 @@ export default function App() {
         <img src="https://images.unsplash.com/photo-1566195992011-5f6b21e539aa?w=1800" alt="About" style={{width:"100%",height:"100%",objectFit:"cover",filter:"brightness(0.28)"}} />
         <div style={{position:"absolute",inset:0,background:"linear-gradient(to top,#080c17,transparent 60%)"}} />
         <div style={{position:"absolute",bottom:40,left:"5vw"}}>
-          <p style={{fontSize:11,letterSpacing:6,color:"#c4a050",textTransform:"uppercase",marginBottom:10}}>{t.ourStory}</p>
-          <h1 className="page-title">{t.aboutAmarya}</h1>
+          <p style={{fontSize:11,letterSpacing:6,color:"#c4a050",textTransform:"uppercase",marginBottom:10}}>Our Story</p>
+          <h1 className="page-title">About <em style={{color:"#c4a050"}}>Amarya</em></h1>
         </div>
       </div>
       <div style={{maxWidth:1100,margin:"0 auto"}} className="page-pad">
@@ -1654,12 +1321,7 @@ export default function App() {
           <img src="https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800" alt="About" style={{width:"100%",height:340,objectFit:"cover"}} />
         </div>
         <div className="grid-auto-2">
-          {[
-            ["✦","Excellence","Uncompromising standards across every partner hotel."],
-            ["🌍","Heritage","Celebrating local culture in every destination."],
-            ["💚","Trust","Verified hotels and secure instant bookings."],
-            ["🤝","Partnership","We grow when our partner hotels grow."]
-          ].map(([icon,title,desc]) => (
+          {[["✦","Excellence","Uncompromising standards across every partner hotel."],["🌍","Heritage","Celebrating local culture in every destination."],["💚","Trust","Verified hotels and secure instant bookings."],["🤝","Partnership","We grow when our partner hotels grow."]].map(([icon,title,desc]) => (
             <div key={title} style={{background:"#0d1220",border:"1px solid rgba(196,160,80,0.1)",padding:24}}>
               <div style={{fontSize:22,marginBottom:10}}>{icon}</div>
               <h3 style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:17,color:"#c4a050",margin:"0 0 7px"}}>{title}</h3>
@@ -1668,7 +1330,7 @@ export default function App() {
           ))}
         </div>
       </div>
-      <Footer onNavigate={navigate} t={t} />
+      <Footer onNavigate={navigate} />
     </div>
   );
 
@@ -1679,19 +1341,12 @@ export default function App() {
         <img src="https://images.unsplash.com/photo-1540518614846-7eded433c457?w=1800" alt="Experiences" style={{width:"100%",height:"100%",objectFit:"cover",filter:"brightness(0.28)"}} />
         <div style={{position:"absolute",inset:0,background:"linear-gradient(to top,#080c17,transparent 60%)"}} />
         <div style={{position:"absolute",bottom:40,left:"5vw"}}>
-          <h1 className="page-title">{t.guestExperiences}</h1>
+          <h1 className="page-title">Guest <em style={{color:"#c4a050"}}>Experiences</em></h1>
         </div>
       </div>
       <div style={{maxWidth:1200,margin:"0 auto"}} className="page-pad">
         <div className="exp-grid">
-          {[
-            ["🍽️","Private Dining","Michelin-trained chef. Bespoke menu. In your suite.","From GHS 800","https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?w=600"],
-            ["💆","Wellness & Spa","Ancient African healing meets modern therapy.","From GHS 400","https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=600"],
-            ["🚁","Aerial Tours","Private helicopter tours from the rooftop.","From GHS 2,000","https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=600"],
-            ["🎭","Cultural Immersion","Local art, music, food and history deep-dives.","From GHS 500","https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=600"],
-            ["🛥️","Private Excursions","Yacht charters, private beaches, tailored day trips.","From GHS 1,500","https://images.unsplash.com/photo-1566195992011-5f6b21e539aa?w=600"],
-            ["🎉","Events","Weddings, anniversaries, corporate events.","Custom pricing","https://images.unsplash.com/photo-1560185007-cde436f6a4d0?w=600"]
-          ].map(([icon,title,desc,price,img]) => (
+          {[["🍽️","Private Dining","Michelin-trained chef. Bespoke menu. In your suite.","From GHS 800","https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?w=600"],["💆","Wellness & Spa","Ancient African healing meets modern therapy.","From GHS 400","https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=600"],["🚁","Aerial Tours","Private helicopter tours from the rooftop.","From GHS 2,000","https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=600"],["🎭","Cultural Immersion","Local art, music, food and history deep-dives.","From GHS 500","https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=600"],["🛥️","Private Excursions","Yacht charters, private beaches, tailored day trips.","From GHS 1,500","https://images.unsplash.com/photo-1566195992011-5f6b21e539aa?w=600"],["🎉","Events","Weddings, anniversaries, corporate events.","Custom pricing","https://images.unsplash.com/photo-1560185007-cde436f6a4d0?w=600"]].map(([icon,title,desc,price,img]) => (
             <div key={title} style={{background:"#0d1220",border:"1px solid rgba(196,160,80,0.1)",overflow:"hidden"}}>
               <img src={img} alt={title} style={{width:"100%",height:170,objectFit:"cover",filter:"brightness(0.6)"}} />
               <div style={{padding:22}}>
@@ -1699,13 +1354,13 @@ export default function App() {
                 <h3 style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:18,color:"#fff",margin:"0 0 7px"}}>{title}</h3>
                 <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,lineHeight:1.7,marginBottom:12}}>{desc}</p>
                 <div style={{fontSize:13,color:"#c4a050",fontWeight:600,marginBottom:12}}>{price}</div>
-                <button onClick={()=>navigate("contact")} className="btn-ghost" style={{padding:"8px 18px",fontSize:11}}>{t.enquire}</button>
+                <button onClick={()=>navigate("contact")} className="btn-ghost" style={{padding:"8px 18px",fontSize:11}}>Enquire</button>
               </div>
             </div>
           ))}
         </div>
       </div>
-      <Footer onNavigate={navigate} t={t} />
+      <Footer onNavigate={navigate} />
     </div>
   );
 
@@ -1713,13 +1368,13 @@ export default function App() {
   const renderContact = () => (
     <div style={{paddingTop:70,background:"#080c17",minHeight:"100vh"}}>
       <div style={{maxWidth:960,margin:"0 auto"}} className="page-pad">
-        <p style={{fontSize:11,letterSpacing:6,color:"#c4a050",textTransform:"uppercase",marginBottom:10}}>{t.getInTouch}</p>
-        <h1 className="page-title" style={{marginBottom:44}}>{t.contactUs}</h1>
+        <p style={{fontSize:11,letterSpacing:6,color:"#c4a050",textTransform:"uppercase",marginBottom:10}}>Get In Touch</p>
+        <h1 className="page-title" style={{marginBottom:44}}>Contact <em style={{color:"#c4a050"}}>Us</em></h1>
         <div className="contact-grid">
           <div>
-            {contactSent && <div style={{background:"rgba(196,160,80,0.1)",border:"1px solid rgba(196,160,80,0.4)",padding:14,marginBottom:20,color:"#c4a050",fontSize:14,textAlign:"center"}}>✓ {t.messageSent}</div>}
+            {contactSent && <div style={{background:"rgba(196,160,80,0.1)",border:"1px solid rgba(196,160,80,0.4)",padding:14,marginBottom:20,color:"#c4a050",fontSize:14,textAlign:"center"}}>✓ Message sent! We'll reply within 24 hours.</div>}
             <form onSubmit={handleContactSubmit}>
-              {[[t.yourName||"name","name","text"],[t.emailAddress,"email","email"],["Subject","subject","text"]].map(([label,name,type]) => (
+              {[["name","Your Name","text"],["email","Email","email"],["subject","Subject","text"]].map(([name,label,type]) => (
                 <div key={name} style={{marginBottom:14}}>
                   <label className="form-label">{label} *</label>
                   <input type={type} required value={contactForm[name]} onChange={e=>setContactForm(f=>({...f,[name]:e.target.value}))} className="amarya-input" />
@@ -1729,11 +1384,11 @@ export default function App() {
                 <label className="form-label">Message *</label>
                 <textarea required rows={5} value={contactForm.message} onChange={e=>setContactForm(f=>({...f,message:e.target.value}))} className="amarya-input" style={{resize:"vertical"}} />
               </div>
-              <button type="submit" className="btn-gold" style={{width:"100%",padding:16,fontSize:12,letterSpacing:4}}>{t.sendMessage}</button>
+              <button type="submit" className="btn-gold" style={{width:"100%",padding:16,fontSize:12,letterSpacing:4}}>Send Message</button>
             </form>
           </div>
           <div>
-            <h2 style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:"clamp(22px,3vw,28px)",fontWeight:300,color:"#fff",margin:"0 0 22px"}}>We'd Love to Hear From You</h2>
+            <h2 style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:"clamp(22px,3vw,28px)",fontWeight:300,color:"#fff",margin:"0 0 22px"}}>We'd Love to<br /><em style={{color:"#c4a050"}}>Hear From You</em></h2>
             {[["📞","Phone","0500714021"],["📧","Email","kellysyder753@gmail.com"],["📍","Location","Accra, Ghana"],["⏰","Hours","24/7 Guest Services"]].map(([icon,label,val]) => (
               <div key={label} style={{display:"flex",gap:12,marginBottom:20}}>
                 <span style={{fontSize:16,width:38,height:38,background:"rgba(196,160,80,0.1)",border:"1px solid rgba(196,160,80,0.2)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{icon}</span>
@@ -1743,7 +1398,7 @@ export default function App() {
           </div>
         </div>
       </div>
-      <Footer onNavigate={navigate} t={t} />
+      <Footer onNavigate={navigate} />
     </div>
   );
 
@@ -1751,15 +1406,10 @@ export default function App() {
   const renderAdmin = () => (
     <div style={{paddingTop:70,background:"#080c17",minHeight:"100vh"}}>
       <div style={{maxWidth:1200,margin:"0 auto"}} className="page-pad">
-        <p style={{fontSize:11,letterSpacing:6,color:"#c4a050",textTransform:"uppercase",marginBottom:10}}>{t.dashboard}</p>
-        <h1 style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:"clamp(32px,4vw,48px)",fontWeight:300,color:"#fff",margin:"0 0 36px"}}>{t.bookingManagement}</h1>
+        <p style={{fontSize:11,letterSpacing:6,color:"#c4a050",textTransform:"uppercase",marginBottom:10}}>Dashboard</p>
+        <h1 style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:"clamp(32px,4vw,48px)",fontWeight:300,color:"#fff",margin:"0 0 36px"}}>Booking <em style={{color:"#c4a050"}}>Management</em></h1>
         <div className="admin-stats">
-          {[
-            [t.totalBookings,bookings.length,"📋"],
-            [t.partnerHotels||"Hotels",hotels.length,"🏨"],
-            [t.availableRoomsLabel,rooms.filter(r=>r.status==="available").length,"✅"],
-            [t.occupied,rooms.filter(r=>r.status==="occupied").length,"🔴"]
-          ].map(([label,val,icon]) => (
+          {[["Total Bookings",bookings.length,"📋"],["Partner Hotels",hotels.length,"🏨"],["Available Rooms",rooms.filter(r=>r.status==="available").length,"✅"],["Occupied",rooms.filter(r=>r.status==="occupied").length,"🔴"]].map(([label,val,icon]) => (
             <div key={label} style={{background:"#0d1220",border:"1px solid rgba(196,160,80,0.15)",padding:20}}>
               <div style={{fontSize:18,marginBottom:5}}>{icon}</div>
               <div style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:30,color:"#c4a050"}}>{val}</div>
@@ -1780,25 +1430,24 @@ export default function App() {
                 <div style={{fontSize:12,color:"rgba(255,255,255,0.55)",minWidth:80}}>{b.type} #{b.room_number}</div>
                 <div style={{fontSize:11,color:"rgba(255,255,255,0.4)",minWidth:120}}>{b.check_in} → {b.check_out}</div>
                 <div style={{fontSize:14,color:"#c4a050",fontWeight:700,minWidth:80}}>GHS {Number(b.total_price).toLocaleString()}</div>
-                <button onClick={()=>handleCancelBooking(b.id)} style={{background:"transparent",border:"1px solid rgba(255,80,80,0.3)",color:"rgba(255,80,80,0.7)",padding:"6px 12px",fontSize:10,letterSpacing:2,cursor:"pointer",textTransform:"uppercase",whiteSpace:"nowrap"}}>{t.cancelBooking}</button>
+                <button onClick={()=>handleCancelBooking(b.id)} style={{background:"transparent",border:"1px solid rgba(255,80,80,0.3)",color:"rgba(255,80,80,0.7)",padding:"6px 12px",fontSize:10,letterSpacing:2,cursor:"pointer",textTransform:"uppercase",whiteSpace:"nowrap"}}>Cancel</button>
               </div>
             ))}
           </div>
         )}
       </div>
-      <Footer onNavigate={navigate} t={t} />
+      <Footer onNavigate={navigate} />
     </div>
   );
+
 
   // ── AUTH PAGE ─────────────────────────────────────────
   const renderAuth = () => (
     <div style={{paddingTop:70,background:'#080c17',minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center'}}>
       <div style={{width:'100%',maxWidth:420,padding:'0 24px'}}>
         <div style={{textAlign:'center',marginBottom:36}}>
-          <p style={{fontSize:11,letterSpacing:6,color:'#c4a050',textTransform:'uppercase',marginBottom:8}}>{authMode==='login'?t.welcomeBack:'Join Amarya'}</p>
-          <h1 style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:'clamp(28px,4vw,40px)',fontWeight:300,color:'#fff',margin:0}}>
-            {authMode==='login'?<>{t.signIn}</>:<>Create <em style={{color:'#c4a050'}}>Account</em></>}
-          </h1>
+          <p style={{fontSize:11,letterSpacing:6,color:'#c4a050',textTransform:'uppercase',marginBottom:8}}>{authMode==='login'?'Welcome Back':'Join Amarya'}</p>
+          <h1 style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:'clamp(28px,4vw,40px)',fontWeight:300,color:'#fff',margin:0}}>{authMode==='login'?<>Sign <em style={{color:'#c4a050'}}>In</em></>:<>Create <em style={{color:'#c4a050'}}>Account</em></>}</h1>
         </div>
         <div style={{background:'#0d1220',border:'1px solid rgba(196,160,80,0.2)',padding:32}}>
           {authError && <div style={{background:'rgba(255,80,80,0.1)',border:'1px solid rgba(255,80,80,0.3)',color:'#ff6b6b',padding:12,marginBottom:16,fontSize:13,textAlign:'center'}}>{authError}</div>}
@@ -1806,17 +1455,17 @@ export default function App() {
             {authMode==='register' && (
               <>
                 <div style={{marginBottom:14}}>
-                  <label className='form-label'>{t.fullName} *</label>
-                  <input required className='amarya-input' value={authForm.name} onChange={e=>setAuthForm(f=>({...f,name:e.target.value}))} placeholder={t.fullName} />
+                  <label className='form-label'>Full Name *</label>
+                  <input required className='amarya-input' value={authForm.name} onChange={e=>setAuthForm(f=>({...f,name:e.target.value}))} placeholder='Your full name' />
                 </div>
                 <div style={{marginBottom:14}}>
-                  <label className='form-label'>{t.phoneNumber}</label>
+                  <label className='form-label'>Phone (for SMS updates)</label>
                   <input className='amarya-input' value={authForm.phone} onChange={e=>setAuthForm(f=>({...f,phone:e.target.value}))} placeholder='e.g. 0244000000' />
                 </div>
               </>
             )}
             <div style={{marginBottom:14}}>
-              <label className='form-label'>{t.emailAddress} *</label>
+              <label className='form-label'>Email *</label>
               <input required type='email' className='amarya-input' value={authForm.email} onChange={e=>setAuthForm(f=>({...f,email:e.target.value}))} placeholder='your@email.com' />
             </div>
             <div style={{marginBottom:24}}>
@@ -1824,14 +1473,14 @@ export default function App() {
               <input required type='password' className='amarya-input' value={authForm.password} onChange={e=>setAuthForm(f=>({...f,password:e.target.value}))} placeholder='Min 6 characters' />
             </div>
             <button type='submit' className='btn-gold' style={{width:'100%',padding:16,fontSize:12,letterSpacing:4}} disabled={authLoading}>
-              {authLoading ? t.processing : authMode==='login' ? t.signIn : 'Create Account'}
+              {authLoading ? 'Please wait...' : authMode==='login' ? 'Sign In' : 'Create Account'}
             </button>
           </form>
           <div style={{textAlign:'center',marginTop:20}}>
             <span style={{fontSize:13,color:'rgba(255,255,255,0.4)'}}>
               {authMode==='login' ? "Don't have an account? " : 'Already have an account? '}
               <span onClick={()=>{setAuthMode(authMode==='login'?'register':'login');setAuthError('');}} style={{color:'#c4a050',cursor:'pointer',textDecoration:'underline'}}>
-                {authMode==='login' ? 'Register' : t.signIn}
+                {authMode==='login' ? 'Register' : 'Sign In'}
               </span>
             </span>
           </div>
@@ -1851,20 +1500,20 @@ export default function App() {
               {user.name?.[0]?.toUpperCase()||'G'}
             </div>
             <div>
-              <p style={{fontSize:11,letterSpacing:4,color:'#c4a050',textTransform:'uppercase',marginBottom:4}}>{t.welcomeBack}</p>
+              <p style={{fontSize:11,letterSpacing:4,color:'#c4a050',textTransform:'uppercase',marginBottom:4}}>Welcome back</p>
               <h1 style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:'clamp(24px,3vw,36px)',fontWeight:300,color:'#fff',margin:0}}>{user.name}</h1>
               <p style={{fontSize:13,color:'rgba(255,255,255,0.4)',marginTop:2}}>{user.email}</p>
             </div>
-            <button onClick={logoutUser} style={{marginLeft:'auto',background:'transparent',border:'1px solid rgba(255,80,80,0.3)',color:'rgba(255,80,80,0.7)',padding:'8px 20px',fontSize:11,letterSpacing:2,cursor:'pointer',textTransform:'uppercase'}}>{t.signOut}</button>
+            <button onClick={logoutUser} style={{marginLeft:'auto',background:'transparent',border:'1px solid rgba(255,80,80,0.3)',color:'rgba(255,80,80,0.7)',padding:'8px 20px',fontSize:11,letterSpacing:2,cursor:'pointer',textTransform:'uppercase'}}>Sign Out</button>
           </div>
 
-          <h2 style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:22,fontWeight:400,color:'#e8d5a0',marginBottom:16}}>{t.myBookings}</h2>
+          <h2 style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:22,fontWeight:400,color:'#e8d5a0',marginBottom:16}}>My Bookings</h2>
           {userBookings.length===0 ? (
             <div style={{textAlign:'center',padding:60,color:'rgba(255,255,255,0.3)',letterSpacing:4,marginBottom:40}}>
               <div style={{fontSize:40,marginBottom:16}}>🏨</div>
-              {t.noBookings}
+              NO BOOKINGS YET
               <br/>
-              <button onClick={()=>navigate('results')} className='btn-gold' style={{marginTop:20,padding:'12px 28px',fontSize:11,letterSpacing:3}}>{t.findHotels}</button>
+              <button onClick={()=>navigate('results')} className='btn-gold' style={{marginTop:20,padding:'12px 28px',fontSize:11,letterSpacing:3}}>Find Hotels</button>
             </div>
           ) : (
             <div style={{display:'flex',flexDirection:'column',gap:12,marginBottom:40}}>
@@ -1885,7 +1534,7 @@ export default function App() {
             </div>
           )}
         </div>
-        <Footer onNavigate={navigate} t={t} />
+        <Footer onNavigate={navigate} />
       </div>
     );
   };
@@ -1894,10 +1543,11 @@ export default function App() {
   const renderMap = () => (
     <div style={{paddingTop:70,background:'#080c17',minHeight:'100vh'}}>
       <div style={{maxWidth:1200,margin:'0 auto'}} className='page-pad'>
-        <p style={{fontSize:11,letterSpacing:6,color:'#c4a050',textTransform:'uppercase',marginBottom:10}}>{t.hotelMap}</p>
-        <h1 className='page-title' style={{marginBottom:8}}>{t.hotelsOnMap}</h1>
-        <p style={{color:'rgba(255,255,255,0.4)',fontSize:14,marginBottom:32}}>{t.showingHotels} {mapHotels.length} {t.hotels2} — {t.clickPin}</p>
+        <p style={{fontSize:11,letterSpacing:6,color:'#c4a050',textTransform:'uppercase',marginBottom:10}}>Hotel Map</p>
+        <h1 className='page-title' style={{marginBottom:8}}>Hotels on <em style={{color:'#c4a050'}}>Map</em></h1>
+        <p style={{color:'rgba(255,255,255,0.4)',fontSize:14,marginBottom:32}}>Showing {mapHotels.length} hotels — click any pin to see details</p>
 
+        {/* Simple visual map with hotel pins */}
         <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))',gap:20,marginBottom:40}}>
           {mapHotels.map(h => (
             <div key={h.id} onClick={()=>setMapSelected(mapSelected?.id===h.id?null:h)}
@@ -1915,18 +1565,18 @@ export default function App() {
                   </div>
                 </div>
                 <div style={{textAlign:'right',flexShrink:0}}>
-                  <div style={{fontSize:11,color:'rgba(255,255,255,0.3)'}}>{t.from}</div>
+                  <div style={{fontSize:11,color:'rgba(255,255,255,0.3)'}}>from</div>
                   <div style={{color:'#c4a050',fontSize:15,fontWeight:700}}>{h.min_price?formatPrice(h.min_price):'—'}</div>
                 </div>
               </div>
               {mapSelected?.id===h.id && (
                 <div style={{marginTop:12,paddingTop:12,borderTop:'1px solid rgba(196,160,80,0.2)',display:'flex',gap:8}}>
-                  <button onClick={e=>{e.stopPropagation();fetchRooms(h.city);navigate('results');}} className='btn-gold' style={{flex:1,padding:'8px 12px',fontSize:10,letterSpacing:2}}>{t.viewRooms}</button>
+                  <button onClick={e=>{e.stopPropagation();fetchRooms(h.city);navigate('results');}} className='btn-gold' style={{flex:1,padding:'8px 12px',fontSize:10,letterSpacing:2}}>View Rooms</button>
                   {h.latitude && h.longitude && (
                     <a href={'https://www.google.com/maps?q='+h.latitude+','+h.longitude} target='_blank' rel='noreferrer'
                       onClick={e=>e.stopPropagation()}
                       style={{flex:1,padding:'8px 12px',fontSize:10,letterSpacing:2,border:'1px solid rgba(196,160,80,0.5)',color:'#c4a050',textDecoration:'none',display:'flex',alignItems:'center',justifyContent:'center',textTransform:'uppercase'}}>
-                      {t.googleMaps}
+                      Google Maps ↗
                     </a>
                   )}
                 </div>
@@ -1938,11 +1588,11 @@ export default function App() {
         {mapHotels.length===0 && (
           <div style={{textAlign:'center',padding:80,color:'rgba(255,255,255,0.3)',letterSpacing:4}}>
             <div style={{fontSize:48,marginBottom:16}}>🗺️</div>
-            {t.searchCity}
+            SEARCH A CITY TO SEE HOTELS ON MAP
           </div>
         )}
       </div>
-      <Footer onNavigate={navigate} t={t} />
+      <Footer onNavigate={navigate} />
     </div>
   );
 
